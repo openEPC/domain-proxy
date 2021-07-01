@@ -12,9 +12,10 @@ logger = logging.getLogger(__name__)
 class RequestDBConsumer:
     """Class to consume requests from the db"""
 
-    def __init__(self, request_type: str, request_processing_limit: int):
+    def __init__(self, request_type: str, request_processing_limit: int, request_max_batch_size: int):
         self.request_type = request_type
         self.request_processing_limit = request_processing_limit
+        self.request_max_batch_size = request_max_batch_size
 
     def get_pending_requests(self, session) -> RequestsMap:
         """
