@@ -9,6 +9,7 @@ COPY protobufs /protobufs
 WORKDIR /radio_controller
 RUN pip3 install --upgrade pip --no-cache-dir -r requirements.txt
 RUN python -m grpc_tools.protoc -I ../protobufs/requests --python_out=. --grpc_python_out=. ../protobufs/requests/requests.proto
+RUN python -m grpc_tools.protoc -I ../protobufs/active_mode --python_out=. --grpc_python_out=. ../protobufs/active_mode/active_mode.proto
 
 FROM standard-version as tests-version
 RUN pip3 install --upgrade pip --no-cache-dir -r tests/requirements.txt
