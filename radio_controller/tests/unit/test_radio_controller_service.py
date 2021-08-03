@@ -4,7 +4,7 @@ import testing.postgresql
 from parameterized import parameterized
 
 from db_service.db_initialize import DBInitializer
-from db_service.models import DBRequest, DBResponse
+from db_service.models import DBRequest, DBResponse, DBCbsd
 from db_service.session_manager import SessionManager
 from db_service.tests.db_testcase import DBTestCase
 from radio_controller.service.service import RadioControllerService
@@ -25,10 +25,11 @@ class RadioControllerTestCase(DBTestCase):
     ])
     def test_get_request_response(self, req_id, db_response_payload, grpc_expected_response_payload):
         # Given
-        db_request = DBRequest(id=1, cbsd_id="foo1")
+        cbsd = DBCbsd(id=1, cbsd_id="foo1")
+        db_request = DBRequest(id=1, cbsd_id=cbsd.id)
         db_response = DBResponse(id=1, request_id=1, response_code=0, payload=db_response_payload)
 
-        self.session.add_all([db_request, db_response])
+        self.session.add_all([cbsd, db_request, db_response])
         self.session.commit()
 
         # When

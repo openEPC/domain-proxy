@@ -1,9 +1,9 @@
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse
-from db_service.session_manager import SessionManager
+from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd
+from db_service.session_manager import SessionManager, Session
 from mappings.types import RequestStates
 from radio_controller.service.strategies.strategies_mapping import get_cbsd_id_strategies
 from requests_pb2 import RequestDbId, RequestDbIds, RequestPayload, ResponsePayload
@@ -44,10 +44,12 @@ class RadioControllerService(RadioControllerServicer):
                 DBRequestState.name == RequestStates.PENDING.value).scalar()
             req_type = session.query(DBRequestType).filter(DBRequestType.name == request_type).scalar()
             for request_json in request_map[request_type]:
+                cbsd_id = self.get_cbsd_id(request_type, request_json)
+                cbsd = self._get_or_create_cbsd(session, cbsd_id)
                 db_request = DBRequest(
                     type=req_type,
                     state=request_pending_state,
-                    cbsd_id=self.get_cbsd_id(request_type, request_json),
+                    cbsd_id=cbsd.id,
                     payload=request_json
                 )
                 if db_request:
@@ -69,3 +71,12 @@ class RadioControllerService(RadioControllerServicer):
     @staticmethod
     def get_cbsd_id(request_name: str, request_payload: Dict):
         return get_cbsd_id_strategies[request_name](request_payload)
+
+    @staticmethod
+    def _get_or_create_cbsd(session: Session, cbsd_id: str) -> DBCbsd:
+        cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).first()
+        if cbsd:
+            return cbsd
+        cbsd = DBCbsd(cbsd_id=cbsd_id) # TODO add parameters from Registration Request
+        session.add(cbsd)
+        return cbsd
