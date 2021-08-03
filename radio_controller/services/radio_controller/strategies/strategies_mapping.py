@@ -1,4 +1,4 @@
-from radio_controller.service.strategies.get_cbsd_id import registration_get_cbsd_id, simple_get_cbsd_id
+from radio_controller.services.radio_controller.strategies.get_cbsd_id import registration_get_cbsd_id, simple_get_cbsd_id
 
 get_cbsd_id_strategies = {
     "registrationRequest": registration_get_cbsd_id,

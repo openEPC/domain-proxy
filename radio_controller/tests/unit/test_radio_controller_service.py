@@ -7,7 +7,7 @@ from db_service.db_initialize import DBInitializer
 from db_service.models import DBRequest, DBResponse, DBCbsd
 from db_service.session_manager import SessionManager
 from db_service.tests.db_testcase import DBTestCase
-from radio_controller.service.service import RadioControllerService
+from radio_controller.services.radio_controller.service import RadioControllerService
 
 Postgresql = testing.postgresql.PostgresqlFactory(cache_initialized_db=True)
 
