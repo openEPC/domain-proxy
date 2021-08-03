@@ -1,3 +1,4 @@
+from db_service.session_manager import SessionManager
 from active_mode_pb2 import GetStateRequest, State
 from active_mode_pb2_grpc import ActiveModeControllerServicer
 
