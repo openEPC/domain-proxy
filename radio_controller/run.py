@@ -8,7 +8,7 @@ import grpc
 from sqlalchemy import create_engine
 
 from db_service.session_manager import SessionManager
-from radio_controller.service.service import RadioControllerService
+from radio_controller.services.radio_controller.service import RadioControllerService
 from requests_pb2_grpc import add_RadioControllerServicer_to_server
 
 from radio_controller.config import Config

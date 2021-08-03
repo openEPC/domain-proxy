@@ -5,7 +5,7 @@ from typing import Dict, List
 from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd
 from db_service.session_manager import SessionManager, Session
 from mappings.types import RequestStates
-from radio_controller.service.strategies.strategies_mapping import get_cbsd_id_strategies
+from radio_controller.services.radio_controller.strategies.strategies_mapping import get_cbsd_id_strategies
 from requests_pb2 import RequestDbId, RequestDbIds, RequestPayload, ResponsePayload
 from requests_pb2_grpc import RadioControllerServicer
 
