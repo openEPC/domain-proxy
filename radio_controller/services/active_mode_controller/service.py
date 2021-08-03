@@ -1,6 +1,10 @@
+import logging
+
 from db_service.session_manager import SessionManager
 from active_mode_pb2 import GetStateRequest, State
 from active_mode_pb2_grpc import ActiveModeControllerServicer
+
+logger = logging.getLogger(__name__)
 
 class ActiveModeControllerService(ActiveModeControllerServicer):
     def __init__(self, session_manager: SessionManager):

@@ -15,10 +15,16 @@ class RequestStates(enum.Enum):
     PROCESSED = "processed"
 
 
+class CbsdStates(enum.Enum):
+    UNREGISTERED = "unregistered"
+    REGISTERED = "registered"
+
+
 class GrantStates(enum.Enum):
     IDLE = "idle"
     GRANTED = "granted"
     AUTHORIZED = "authorized"
+
 
 class ResponseCodes(enum.Enum):
     # Success
