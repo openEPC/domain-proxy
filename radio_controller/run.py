@@ -9,7 +9,9 @@ from sqlalchemy import create_engine
 
 from db_service.session_manager import SessionManager
 from radio_controller.services.radio_controller.service import RadioControllerService
+from radio_controller.services.active_mode_controller.service import ActiveModeControllerService
 from requests_pb2_grpc import add_RadioControllerServicer_to_server
+from active_mode_pb2_grpc import add_ActiveModeControllerServicer_to_server
 
 from radio_controller.config import Config
 
@@ -30,6 +32,7 @@ def run():
     session_manager = SessionManager(db_engine)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     add_RadioControllerServicer_to_server(RadioControllerService(session_manager=session_manager), server)
+    add_ActiveModeControllerServicer_to_server(ActiveModeControllerService(session_manager=session_manager), server)
     server.add_insecure_port(f"[::]:{config.GRPC_PORT}")
     server.start()
     logger.info(f"GRPC Server started on port {config.GRPC_PORT}")
