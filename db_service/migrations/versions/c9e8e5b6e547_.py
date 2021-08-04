@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 284d9a636fb6
+Revision ID: c9e8e5b6e547
 Revises: 9fb9db0b2bcc
-Create Date: 2021-08-03 12:01:41.198587
+Create Date: 2021-08-04 11:40:41.197827
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '284d9a636fb6'
+revision = 'c9e8e5b6e547'
 down_revision = '9fb9db0b2bcc'
 branch_labels = None
 depends_on = None
@@ -55,6 +55,8 @@ def upgrade():
     sa.Column('high_frequency', sa.Integer(), nullable=False),
     sa.Column('channel_type', sa.String(), nullable=False),
     sa.Column('rule_applied', sa.String(), nullable=False),
+    sa.Column('max_eirp', sa.Float(), nullable=True),
+    sa.Column('last_used_max_eirp', sa.Float(), nullable=True),
     sa.Column('created_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_date', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['cbsd_id'], ['cbsd.id'], ),
