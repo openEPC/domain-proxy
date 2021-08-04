@@ -32,31 +32,40 @@ class ActiveModeControllerTestCase(DBTestCase):
             user_id="some_user_id",
             fcc_id="some_fcc_id",
             cbsd_serial_number="some_serial_number",
-            eirp_capability=1.23,
+            eirp_capability=26.5,
         )
         other_cbsd = DBCbsd(
             id=2,
-            state=registered_state,
+            state=unregistered_state,
             cbsd_id="other_cbsd_id",
-            user_id="other_user_id",
-            fcc_id="other_fcc_id",
-            cbsd_serial_number="other_serial_number",
         )
         cbsd_without_active_mode = DBCbsd(
             id=3,
             state=registered_state,
             cbsd_id="cbsd_without_active_mode_id"
         )
-        some_active_mode_config = DBActiveModeConfig(
-            id=1,
-            cbsd_id=some_cbsd.id,
-            desired_state=registered_state,
-        )
-        other_active_mode_config = DBActiveModeConfig(
-            id=2,
-            cbsd_id=other.id,
-            desired_state=registered_state,
-        )
+        cbsds = [some_cbsd, other_cbsd, cbsd_without_active_mode]
+        active_mode_configs = [
+            DBActiveModeConfig(
+                id=1,
+                cbsd_id=some_cbsd.id,
+                desired_state=registered_state,
+            ),
+            DBActiveModeConfig(
+                id=2,
+                cbsd_id=other.id,
+                desired_state=unregistered_state,
+            ),
+        ]
+        channels = [
+            DBChannel(
+                id=1,
+                cbsd_id=some_cbsd.id,
+                low_frequency=50,
+                high_frequency=60,
+                # max_eirp=
+            ),
+        ]
         some_channels = _
         expected_state = active_mode.State(
             active_mode_configs = [

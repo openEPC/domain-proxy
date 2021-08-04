@@ -170,6 +170,8 @@ class DBChannel(Base):
     high_frequency = Column(Integer, nullable=False)
     channel_type = Column(String, nullable=False)
     rule_applied = Column(String, nullable=False)
+    max_eirp = Column(Float)
+    last_used_max_eirp = Column(Float)
     created_date = Column(DateTime(timezone=True), nullable=False, server_default=now())
     updated_date = Column(DateTime(timezone=True), server_default=now(), onupdate=now())
 
@@ -182,6 +184,8 @@ class DBChannel(Base):
                f"high_frequency='{self.high_frequency}', " \
                f"channel_type='{self.channel_type}', " \
                f"rule_applied='{self.rule_applied}', " \
+               f"max_eirp='{self.max_eirp}', " \
+               f"last_used_max_eirp='{self.last_used_max_eirp}', " \
                f"created_date='{self.created_date}', " \
                f"updated_date='{self.updated_date}')>"
 
