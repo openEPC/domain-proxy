@@ -1,4 +1,5 @@
 import testing.postgresql
+from datetime import datetime
 
 from db_service.db_initialize import DBInitializer
 from db_service.models import DBCbsd, DBCbsdState, DBGrant, DBGrantState, DBActiveModeConfig, DBChannel
@@ -17,13 +18,11 @@ class ActiveModeControllerTestCase(DBTestCase):
         DBInitializer(SessionManager(self.engine)).initialize()
 
     def test_get_state(self):
-        # given
+        # Given
+        grant_states = {x.name: x.id for x in self.session.query(DBGrantState).all()}
+
         unregistered_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
         registered_state = DBCbsdState(name=CbsdStates.REGISTERED.value)
-
-        idle_state = DBGrantState(name=GrantStates.IDLE.value)
-        granted_state = DBGrantState(name=GrantStates.GRANTED.value)
-        authorized_state = DBGrantState(name=GrantStates.AUTHORIZED.value)
 
         some_cbsd = DBCbsd(
             id=1,
@@ -53,8 +52,32 @@ class ActiveModeControllerTestCase(DBTestCase):
             ),
             DBActiveModeConfig(
                 id=2,
-                cbsd_id=other.id,
+                cbsd_id=other_cbsd.id,
                 desired_state=unregistered_state,
+            ),
+        ]
+        grants = [
+            DBGrant(
+                id=1,
+                state_id=grant_states[GrantStates.IDLE.value],
+                cbsd_id=some_cbsd.id,
+                grant_id="some_idle_grant_id",
+            ),
+            DBGrant(
+                id=2,
+                state_id=grant_states[GrantStates.GRANTED.value],
+                cbsd_id=some_cbsd.id,
+                grant_id="some_granted_grant_id",
+                heartbeat_interval=100,
+                last_heartbeat_request_time=datetime.fromtimestamp(200),
+            ),
+            DBGrant(
+                id=3,
+                state_id=grant_states[GrantStates.AUTHORIZED.value],
+                cbsd_id=some_cbsd.id,
+                grant_id="some_authorized_grant_id",
+                heartbeat_interval=300,
+                last_heartbeat_request_time=datetime.fromtimestamp(400),
             ),
         ]
         channels = [
@@ -63,10 +86,28 @@ class ActiveModeControllerTestCase(DBTestCase):
                 cbsd_id=some_cbsd.id,
                 low_frequency=50,
                 high_frequency=60,
-                # max_eirp=
+                max_eirp=24.5,
+                last_used_max_eirp=25.5,
+                channel_type="some channel type",
+                rule_applied="some rule",
             ),
+            DBChannel(
+                id=2,
+                cbsd_id=some_cbsd.id,
+                low_frequency=70,
+                high_frequency=80,
+                channel_type="some channel type",
+                rule_applied="some rule",
+            )
         ]
-        some_channels = _
+        resources = [r for l in [cbsds, active_mode_configs, grants, channels] for r in l]
+        self.session.add_all(resources)
+        self.session.commit()
+
+        # When
+        actual_state = self.amc_service.GetState(active_mode.GetStateRequest(), None)
+
+        # Then
         expected_state = active_mode.State(
             active_mode_configs = [
                 active_mode.ActiveModeConfig(
@@ -119,7 +160,4 @@ class ActiveModeControllerTestCase(DBTestCase):
                 ),
             ]
         )
-        actual_state = self.amc_service.GetState(active_mode.GetStateRequest(), None)
-
-        # Then
-        self.assertEqual(expected_state, actual_state)
+        self.assertEqual(expected_state, actual_state) # TODO do something, so that diff is not truncated
