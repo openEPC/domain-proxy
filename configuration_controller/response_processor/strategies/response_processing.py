@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from db_service.models import DBGrant, DBGrantState, DBResponse
+from db_service.models import DBGrant, DBGrantState, DBResponse, DBCbsd
 from db_service.session_manager import Session
 from mappings.types import GrantStates, ResponseCodes
 
@@ -104,12 +104,13 @@ def process_deregistration_responses(responses: List[DBResponse], session: Sessi
 def _get_or_create_grant_from_response(response: DBResponse, session: Session) -> Optional[DBGrant]:
     cbsd_id = response.payload[CBSD_ID]
     grant_id = response.payload[GRANT_ID]
+    cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).scalar()
     logger.info(f'Getting grant by cbsd_id={cbsd_id} and grant_id={grant_id}')
-    grant = session.query(DBGrant).filter(DBGrant.cbsd_id == cbsd_id, DBGrant.grant_id == grant_id).scalar()
+    grant = session.query(DBGrant).filter(DBGrant.cbsd_id == cbsd.id, DBGrant.grant_id == grant_id).scalar()
 
     if not grant:
         grant_idle_state = session.query(DBGrantState).filter(DBGrantState.name == GrantStates.IDLE.value).scalar()
-        grant = DBGrant(cbsd_id=cbsd_id, grant_id=grant_id, state=grant_idle_state)
+        grant = DBGrant(cbsd=cbsd, grant_id=grant_id, state=grant_idle_state)
         session.add(grant)
         logger.info(f'Created new grant: {grant}')
     return grant
@@ -134,8 +135,9 @@ def _update_grant_from_response(response: DBResponse, grant: DBGrant) -> None:
 
 def _terminate_all_grants_from_response(response: DBResponse, session: Session) -> None:
     cbsd_id = response.payload[CBSD_ID]
+    cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).scalar()
     logger.info(f'Terminating all grants for cbsd_id: {cbsd_id}')
     grant_idle_state = session.query(DBGrantState).filter(DBGrantState.name == GrantStates.IDLE.value).scalar()
-    for grant in session.query(DBGrant).filter(DBGrant.cbsd_id == cbsd_id).all():
+    for grant in session.query(DBGrant).filter(DBGrant.cbsd == cbsd).all():
         logger.info(f'Terminating grant {grant}')
         grant.state = grant_idle_state

@@ -1,3 +1,5 @@
+from typing import Dict
+
 import requests
 import responses
 from parameterized import parameterized
@@ -11,7 +13,8 @@ from configuration_controller.tests.fixtures.fake_requests.heartbeat_requests im
 from configuration_controller.tests.fixtures.fake_requests.registration_requests import registration_requests
 from configuration_controller.tests.fixtures.fake_requests.relinquishment_requests import relinquishment_requests
 from configuration_controller.tests.fixtures.fake_requests.spectrum_inquiry_requests import spectrum_inquiry_requests
-from db_service.models import DBGrant, DBGrantState, DBRequest, DBRequestState, DBRequestType, DBResponse
+from db_service.models import DBGrant, DBGrantState, DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, \
+    DBCbsdState
 from db_service.tests.db_testcase import DBTestCase
 from mappings.types import GrantStates, RequestStates, RequestTypes
 
@@ -45,10 +48,16 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
         request_type = DBRequestType(name=request_type_name)
 
+        cbsd_state = DBCbsdState(name="test_state")
+        self.session.add(cbsd_state)
+        self.session.commit()
+
         db_requests = self._create_db_requests_from_fixture(
             request_state=pending_state,
             request_type=request_type,
-            fixture=requests_fixtures)
+            fixture=requests_fixtures,
+            cbsd_state=cbsd_state,
+        )
         nr_of_requests = len(db_requests)
 
         response_payload = self._create_response_payload_from_db_requests(
@@ -106,10 +115,16 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
         request_type = DBRequestType(name=request_type_name)
 
+        cbsd_state = DBCbsdState(name="test_state")
+        self.session.add(cbsd_state)
+        self.session.commit()
+
         db_requests = self._create_db_requests_from_fixture(
             request_state=pending_state,
             request_type=request_type,
-            fixture=requests_fixtures)
+            fixture=requests_fixtures,
+            cbsd_state=cbsd_state,
+        )
         nr_of_requests = len(db_requests)
 
         response_payload = self._create_response_payload_from_db_requests(
@@ -144,30 +159,46 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         self.assertListEqual([expected_grant_state_name]*nr_of_requests,
                              [g.state.name for g in self.session.query(DBGrant).all()])
 
-    def _generate_cbsd_id_from_request_json(self, request_payload):
-        if request_payload.get(CBSD_ID, ""):
-            return request_payload.get(CBSD_ID)
-        else:
-            return f'{request_payload.get(FCC_ID)}/{request_payload.get(CBSD_SERIAL_NR)}'
+    def _generate_cbsd_from_request_json(self, request_payload: Dict, cbsd_state):
+        cbsd_id = request_payload.get(CBSD_ID, "")
+        fcc_id = request_payload.get(FCC_ID)
+        serial_number = request_payload.get(CBSD_SERIAL_NR)
+        combined_cbsd_id = f'{fcc_id}/{serial_number}'
+        cbsd_id = cbsd_id or combined_cbsd_id
+
+        cbsd = DBCbsd(
+            cbsd_id=cbsd_id,
+            fcc_id=fcc_id,
+            cbsd_serial_number=serial_number,
+            user_id=f"test_user",
+            eirp_capability=1.1,
+            state=cbsd_state,
+        )
+
+        self.session.add(cbsd)
+        self.session.commit()
+
+        return cbsd
 
     def _get_request_type_from_fixture(self, fixture):
         return next(iter(fixture[0].keys()))
 
-    def _create_db_requests_from_fixture(self, request_state, request_type, fixture):
+    def _create_db_requests_from_fixture(self, request_state, request_type, fixture, cbsd_state):
         request_type_name = self._get_request_type_from_fixture(fixture)
-        return [
+        reqs = [
             DBRequest(
-                cbsd_id=self._generate_cbsd_id_from_request_json(r[request_type_name][0]),
+                cbsd=self._generate_cbsd_from_request_json(r[request_type_name][0], cbsd_state),
                 state=request_state,
                 type=request_type,
                 payload=r[request_type_name][0])
             for r in fixture
         ]
+        return reqs
 
     def _create_response_payload_from_db_requests(self, response_type_name, db_requests):
         response_payload = {response_type_name: []}
         for db_request in db_requests:
-            response_json = {"response": {"responseCode": 0}, "cbsdId": db_request.cbsd_id}
+            response_json = {"response": {"responseCode": 0}, "cbsdId": db_request.cbsd.cbsd_id}
             if db_request.payload.get(GRANT_ID, ""):
                 response_json[GRANT_ID] = db_request.payload.get(GRANT_ID)
             elif response_type_name == request_response[RequestTypes.GRANT.value]:

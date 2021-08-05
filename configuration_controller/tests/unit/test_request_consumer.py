@@ -1,10 +1,9 @@
 from parameterized import parameterized
 
 from configuration_controller.request_consumer.request_db_consumer import RequestDBConsumer
-from db_service.models import DBRequest, DBRequestState, DBRequestType
+from db_service.models import DBRequest, DBRequestState, DBRequestType, DBCbsd, DBCbsdState
 from db_service.session_manager import Session
 from db_service.tests.db_testcase import DBTestCase
-
 
 REQUEST_PROCESSING_LIMIT = 10
 
@@ -76,11 +75,25 @@ class RegistrationDBConsumerTestCase(DBTestCase):
         session2.close()
 
     def _prepare_two_pending_and_one_processed_request(self):
+        test_state = DBCbsdState(name="test_state")
+        cbsds = []
+        for i in range(1, 4):
+            cbsds.append(
+                DBCbsd(
+                    id=int(i),
+                    cbsd_id=f"foo{i}",
+                    state=test_state,
+                    user_id="test_user",
+                    fcc_id=f"test_fcc_id{i}",
+                    cbsd_serial_number=f"test_serial_nr{i}",
+                    eirp_capability=1.3
+                )
+            )
         req_type = DBRequestType(name="someRequest")
         pending_status = DBRequestState(name="pending")
         processed_status = DBRequestState(name="processed")
-        req1 = DBRequest(cbsd_id="foo1", type=req_type, state=pending_status, payload={"some": "payload1"})
-        req2 = DBRequest(cbsd_id="foo2", type=req_type, state=pending_status, payload={"some": "payload2"})
-        req3 = DBRequest(cbsd_id="foo3", type=req_type, state=processed_status, payload={"some": "payload3"})
+        req1 = DBRequest(cbsd=cbsds[0], type=req_type, state=pending_status, payload={"some": "payload1"})
+        req2 = DBRequest(cbsd=cbsds[1], type=req_type, state=pending_status, payload={"some": "payload2"})
+        req3 = DBRequest(cbsd=cbsds[2], type=req_type, state=processed_status, payload={"some": "payload3"})
         self.session.add_all([req1, req2, req3])
         self.session.commit()

@@ -21,7 +21,7 @@ class RequestMergingTestCase(TestCase):
         req_state = DBRequestState(name="pending")
         req_type = DBRequestType(name=request_type)
         reqs = [
-            DBRequest(cbsd_id="foo", state=req_state, type=req_type, payload=json.dumps(r[request_type]))
+            DBRequest(cbsd_id=1, state=req_state, type=req_type, payload=json.dumps(r[request_type]))
             for r in registration_requests
         ]
         merged_requests = merge_requests({request_type: reqs})
