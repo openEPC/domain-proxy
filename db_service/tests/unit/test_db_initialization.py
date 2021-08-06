@@ -1,5 +1,7 @@
+from parameterized import parameterized
+
 from db_service.db_initialize import DBInitializer
-from db_service.models import DBRequestState, DBRequestType
+from db_service.models import DBRequestState, DBRequestType, DBCbsdState, DBGrantState
 from db_service.session_manager import SessionManager
 from db_service.tests.db_testcase import DBTestCase
 
@@ -10,33 +12,38 @@ class DBInitializationTestCase(DBTestCase):
         super().setUp()
         self.initializer = DBInitializer(SessionManager(db_engine=self.engine))
 
-    def test_db_is_initialized_with_db_states_and_types(self):
+    @parameterized.expand([
+        (DBRequestType, 6),
+        (DBRequestState, 2),
+        (DBGrantState, 3),
+        (DBCbsdState, 2),
+    ])
+    def test_db_is_initialized_with_db_states_and_types(self, model, expected_post_init_count):
         # Given
-        types_pre_init = self.session.query(DBRequestType).all()
-        states_pre_init = self.session.query(DBRequestState).all()
+        model_entities_pre_init = self.session.query(model).all()
 
         # When
         self.initializer.initialize()
 
-        types_post_init = self.session.query(DBRequestType).all()
-        states_post_init = self.session.query(DBRequestState).all()
+        model_entities_post_init = self.session.query(model).all()
 
         # Then
-        self.assertEqual(0, len(types_pre_init))
-        self.assertEqual(0, len(states_pre_init))
-        self.assertEqual(6, len(types_post_init))
-        self.assertEqual(2, len(states_post_init))
+        self.assertEqual(0, len(model_entities_pre_init))
+        self.assertEqual(expected_post_init_count, len(model_entities_post_init))
 
-    def test_db_is_initialized_only_once(self):
+    @parameterized.expand([
+        (DBRequestType, ),
+        (DBRequestState, ),
+        (DBGrantState, ),
+        (DBCbsdState, ),
+    ])
+    def test_db_is_initialized_only_once(self, model):
         # Given / When
         self.initializer.initialize()
-        types_post_init_1 = self.session.query(DBRequestType).all()
-        states_post_init_1 = self.session.query(DBRequestState).all()
+        model_entities_post_init_1 = self.session.query(model).all()
 
         self.initializer.initialize()
-        types_post_init_2 = self.session.query(DBRequestType).all()
-        states_post_init_2 = self.session.query(DBRequestState).all()
+        model_entities_post_init_2 = self.session.query(model).all()
 
         # Then
-        self.assertListEqual(types_post_init_1, types_post_init_2)
-        self.assertListEqual(states_post_init_1, states_post_init_2)
+        self.assertListEqual(model_entities_post_init_1, model_entities_post_init_2)

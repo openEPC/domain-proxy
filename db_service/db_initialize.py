@@ -4,9 +4,9 @@ import os
 from sqlalchemy import create_engine
 
 from db_service.config import Config
-from db_service.models import DBGrantState, DBRequestState, DBRequestType
+from db_service.models import DBGrantState, DBRequestState, DBRequestType, DBCbsdState
 from db_service.session_manager import SessionManager
-from mappings.types import GrantStates, RequestStates, RequestTypes
+from mappings.types import GrantStates, RequestStates, RequestTypes, CbsdStates
 
 
 class DBInitializer:
@@ -30,6 +30,10 @@ class DBInitializer:
                 if not s.query(DBGrantState).filter(DBGrantState.name == state.value).first():
                     grant_state = DBGrantState(name=state.value)
                     s.add(grant_state)
+            for state in CbsdStates:
+                if not s.query(DBCbsdState).filter(DBCbsdState.name == state.value).first():
+                    cbsd_state = DBCbsdState(name=state.value)
+                    s.add(cbsd_state)
             s.commit()
 
 
