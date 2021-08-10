@@ -2,7 +2,7 @@ import logging
 
 import active_mode_pb2 as active_mode
 from db_service.models import DBActiveModeConfig, DBCbsd, DBGrant, DBGrantState, DBChannel
-from db_service.session_manager import SessionManager, Session, Session
+from db_service.session_manager import SessionManager, Session
 from active_mode_pb2 import GetStateRequest, State
 from active_mode_pb2_grpc import ActiveModeControllerServicer
 from mappings.types import CbsdStates, GrantStates
@@ -18,6 +18,7 @@ grant_state_mapping = {
     GrantStates.GRANTED.value: active_mode.Granted,
     GrantStates.AUTHORIZED.value: active_mode.Authorized,
 }
+
 
 class ActiveModeControllerService(ActiveModeControllerServicer):
     def __init__(self, session_manager: SessionManager):

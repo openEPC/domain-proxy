@@ -10,6 +10,15 @@ class RequestTypes(enum.Enum):
     DEREGISTRATION = "deregistrationRequest"
 
 
+class ResponseTypes(enum.Enum):
+    REGISTRATION = "registrationResponse"
+    SPECTRUM_INQUIRY = "spectrumInquiryResponse"
+    GRANT = "grantResponse"
+    HEARTBEAT = "heartbeatResponse"
+    RELINQUISHMENT = "relinquishmentResponse"
+    DEREGISTRATION = "deregistrationResponse"
+
+
 class RequestStates(enum.Enum):
     PENDING = "pending"
     PROCESSED = "processed"

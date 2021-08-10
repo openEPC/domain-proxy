@@ -1,10 +1,10 @@
 import json
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd
+from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, DBCbsdState
 from db_service.session_manager import SessionManager, Session
-from mappings.types import RequestStates
+from mappings.types import RequestStates, CbsdStates, RequestTypes
 from radio_controller.services.radio_controller.strategies.strategies_mapping import get_cbsd_id_strategies
 from requests_pb2 import RequestDbId, RequestDbIds, RequestPayload, ResponsePayload
 from requests_pb2_grpc import RadioControllerServicer
@@ -44,8 +44,10 @@ class RadioControllerService(RadioControllerServicer):
                 DBRequestState.name == RequestStates.PENDING.value).scalar()
             req_type = session.query(DBRequestType).filter(DBRequestType.name == request_type).scalar()
             for request_json in request_map[request_type]:
-                cbsd_id = self.get_cbsd_id(request_type, request_json)
-                cbsd = self._get_or_create_cbsd(session, cbsd_id)
+                cbsd = self._get_or_create_cbsd(session, request_type, request_json)
+                if not cbsd:
+                    logger.error(f"Could not obtain cbsd to bind to the request: {request_json}")
+                    continue
                 db_request = DBRequest(
                     type=req_type,
                     state=request_pending_state,
@@ -72,11 +74,36 @@ class RadioControllerService(RadioControllerServicer):
     def get_cbsd_id(request_name: str, request_payload: Dict):
         return get_cbsd_id_strategies[request_name](request_payload)
 
-    @staticmethod
-    def _get_or_create_cbsd(session: Session, cbsd_id: str) -> DBCbsd:
+    def _get_or_create_cbsd(self, session: Session, request_type: str, request_json: Dict) -> Optional[DBCbsd]:
+        cbsd_id = self.get_cbsd_id(request_type, request_json)
         cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).first()
         if cbsd:
             return cbsd
-        cbsd = DBCbsd(cbsd_id=cbsd_id) # TODO add parameters from Registration Request
+        elif request_type == RequestTypes.REGISTRATION.value:
+            return self._create_cbsd_from_registration_request(session, request_json, cbsd_id)
+        else:
+            logger.error(f"Unable to create CBSD from {request_type}")
+            return None
+
+    @staticmethod
+    def _create_cbsd_from_registration_request(session, request_json, cbsd_id):
+        logger.info(f"Creating new CBSD with cbsdId {cbsd_id}")
+        cbsd_state = session.query(DBCbsdState).filter(DBCbsdState.name == CbsdStates.UNREGISTERED.name).scalar()
+        user_id = request_json.get("userId", None)
+        fcc_id = request_json.get("fccId", None)
+        cbsd_serial_number = request_json.get("cbsdSerialNumber", None)
+        installation_param = request_json.get("installationParam", None)
+        eirp_capability = None
+        if installation_param:
+            eirp_capability = installation_param.get("eirpCapability", None)
+        cbsd = DBCbsd(
+            cbsd_id=cbsd_id,
+            state=cbsd_state,
+            user_id=user_id,
+            fcc_id=fcc_id,
+            cbsd_serial_number=cbsd_serial_number,
+            eirp_capability=eirp_capability,
+        )
         session.add(cbsd)
+        logger.info(f"New CBSD with cbsdId {cbsd_id} created")
         return cbsd

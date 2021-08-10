@@ -38,12 +38,28 @@ class RadioControllerTestCase(DBTestCase):
         # Then
         self.assertEqual(grpc_expected_response_payload, grpc_response_payload)
 
-    def test_store_requests_from_map_stores_requests_in_db(self):
+    @parameterized.expand([
+        ({"registrationRequest":
+              [{"fccId": "foo1", "cbsdSerialNumber": "foo2"},
+               {"fccId": "foo1", "cbsdSerialNumber": "foo2"}]}, [1, 2]),
+        ({"deregistrationRequest":
+              [{"cbsdId": "foo1"},
+               {"cbsdId": "foo1"}]}, []),
+        ({"relinquishmentRequest":
+              [{"cbsdId": "foo1"},
+               {"cbsdId": "foo1"}]}, []),
+        ({"heartbeatRequest":
+              [{"cbsdId": "foo1"},
+               {"cbsdId": "foo1"}]}, []),
+        ({"grantRequest":
+              [{"cbsdId": "foo1"},
+               {"cbsdId": "foo1"}]}, []),
+        ({"spectrumInquiryRequest":
+              [{"cbsdId": "foo1"},
+               {"cbsdId": "foo1"}]}, []),
+    ])
+    def test_store_requests_from_map_stores_requests_in_db_only_for_registration_reqs(self, request_map, expected_list):
         # Given
-        request_map = {
-             "registrationRequest": [{"fccId": "foo1", "cbsdSerialNumber": "foo2"},
-                                     {"fccId": "foo1", "cbsdSerialNumber": "foo2"}]
-         }
 
         # When
         self.rc_service._store_requests_from_map(request_map)
@@ -51,4 +67,29 @@ class RadioControllerTestCase(DBTestCase):
         db_request_ids = [_id for (_id,) in db_request_ids]
 
         # Then
-        self.assertListEqual(db_request_ids, [1, 2])
+        self.assertListEqual(db_request_ids, expected_list)
+
+    def test_get_or_create_cbsd_doesnt_create_already_existing_entities(self):
+        # Given
+        payload = {"fccId": "foo1", "cbsdSerialNumber": "foo2"}
+        # No cbsds in the db
+        # When
+        self.rc_service._get_or_create_cbsd(
+            self.session,
+            "registrationRequest",
+            payload,
+        )
+        self.session.commit()
+
+        cbsd1 = self.session.query(DBCbsd).first()
+
+        self.rc_service._get_or_create_cbsd(
+            self.session,
+            "registrationRequest",
+            payload,
+        )
+        self.session.commit()
+        cbsd2 = self.session.query(DBCbsd).first()
+
+        # Then
+        self.assertEqual(cbsd1.id, cbsd2.id)
