@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from configuration_controller.response_processor.response_db_processor import ResponseDBProcessor
-from db_service.models import DBGrant, DBResponse, DBCbsd, DBCbsdState
+from db_service.models import DBGrant, DBResponse, DBCbsd, DBChannel, DBCbsdState
 from db_service.session_manager import Session
 from mappings.types import GrantStates, ResponseCodes, CbsdStates
 
@@ -34,6 +34,32 @@ def _change_cbsd_state(response: DBResponse, session: Session, new_state: str) -
 def process_spectrum_inquiry_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:
     if response.response_code == ResponseCodes.DEREGISTER.value:
         _terminate_all_grants_from_response(obj, response, session)
+    elif response.response_code == ResponseCodes.SUCCESS.value:
+        _create_channels(response, session)
+
+
+def _create_channels(response: DBResponse, session: Session):
+    cbsd_id = response.request.payload["cbsdId"]
+    cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).scalar()
+    # delete existing db channel if any
+    # this should have been done when receiving a new spectrumInquiryRequest, this is just a safety measure
+    session.query(DBChannel).filter(DBChannel.cbsd == cbsd).delete()
+    available_channels = response.payload.get("availableChannel")
+    if not available_channels:
+        logger.warning(
+            "Could not create channel from spectrumInquiryResponse. Response missing 'availableChannel' object")
+        return
+    for ac in available_channels:
+        frequency_range = ac["frequencyRange"]
+        channel = DBChannel(
+            cbsd=cbsd,
+            low_frequency=frequency_range["lowFrequency"],
+            high_frequency=frequency_range["highFrequency"],
+            channel_type=ac["channelType"],
+            rule_applied=ac["ruleApplied"],
+            max_eirp=ac["maxEirp"],
+        )
+        session.add(channel)
 
 
 def process_grant_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:

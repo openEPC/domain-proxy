@@ -156,6 +156,7 @@ class DBChannel(Base):
     __tablename__ = "channel"
     id = Column(Integer, primary_key=True, autoincrement=True)
     cbsd_id = Column(Integer, ForeignKey("cbsd.id"))
+    # FIXME below fields are non nullable but the parameter in SAS response containing those values is optional
     low_frequency = Column(Integer, nullable=False)
     high_frequency = Column(Integer, nullable=False)
     channel_type = Column(String, nullable=False)
@@ -168,16 +169,7 @@ class DBChannel(Base):
     cbsd = relationship("DBCbsd", back_populates="channels")
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}(id='{self.id}', " \
-               f"cbsd_id='{self.cbsd_id}', " \
-               f"low_frequency='{self.low_frequency}', " \
-               f"high_frequency='{self.high_frequency}', " \
-               f"channel_type='{self.channel_type}', " \
-               f"rule_applied='{self.rule_applied}', " \
-               f"max_eirp='{self.max_eirp}', " \
-               f"last_used_max_eirp='{self.last_used_max_eirp}', " \
-               f"created_date='{self.created_date}', " \
-               f"updated_date='{self.updated_date}')>"
+        return f"<{self.__class__.__name__}(id='{self.id}', cbsd_id='{self.cbsd_id}')>"
 
 
 class DBActiveModeConfig(Base):

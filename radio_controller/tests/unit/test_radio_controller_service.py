@@ -4,7 +4,7 @@ import testing.postgresql
 from parameterized import parameterized
 
 from db_service.db_initialize import DBInitializer
-from db_service.models import DBRequest, DBResponse, DBCbsd
+from db_service.models import DBRequest, DBResponse, DBCbsd, DBChannel
 from db_service.session_manager import SessionManager
 from db_service.tests.db_testcase import DBTestCase
 from radio_controller.services.radio_controller.service import RadioControllerService
@@ -62,7 +62,7 @@ class RadioControllerTestCase(DBTestCase):
         # Given
 
         # When
-        self.rc_service._store_requests_from_map(request_map)
+        self.rc_service._store_requests_from_map_in_db(request_map)
         db_request_ids = self.session.query(DBRequest.id).all()
         db_request_ids = [_id for (_id,) in db_request_ids]
 
@@ -93,3 +93,45 @@ class RadioControllerTestCase(DBTestCase):
 
         # Then
         self.assertEqual(cbsd1.id, cbsd2.id)
+
+    @parameterized.expand([
+        (0,),
+        (1,),
+        (2,),
+    ])
+    def test_channels_deleted_when_new_spectrum_inquiry_request_arrives(self, number_of_channels):
+        # Given
+        cbsd = DBCbsd(id=1, cbsd_id="foo1")
+
+        self._create_channels_for_cbsd(cbsd, number_of_channels)
+
+        cbsd_channels_count_pre_request = len(cbsd.channels)
+
+        self.assertEqual(number_of_channels, cbsd_channels_count_pre_request)
+
+        request_map = {"spectrumInquiryRequest": [{"cbsdId": "foo1"}]}
+
+        # When
+        self.rc_service._store_requests_from_map_in_db(request_map)
+        self.session.commit()
+
+        cbsd_channels_count_post_request = len(cbsd.channels)
+
+        # Then
+        self.assertEqual(0, cbsd_channels_count_post_request)
+
+    def _create_channels_for_cbsd(self, cbsd: DBCbsd, number: int):
+        channels = [
+            DBChannel(
+                cbsd=cbsd,
+                low_frequency=number,
+                high_frequency=number + 1,
+                channel_type=f"test_type{number}",
+                rule_applied=f"test_rule{number}",
+                max_eirp=0.1 + number,
+                last_used_max_eirp=1.1 + number
+            ) for _ in range(0, number)
+        ]
+        self.session.add_all(channels)
+        self.session.commit()
+        return channels

@@ -13,6 +13,8 @@ from configuration_controller.tests.fixtures.fake_requests.heartbeat_requests im
 from configuration_controller.tests.fixtures.fake_requests.registration_requests import registration_requests
 from configuration_controller.tests.fixtures.fake_requests.relinquishment_requests import relinquishment_requests
 from configuration_controller.tests.fixtures.fake_requests.spectrum_inquiry_requests import spectrum_inquiry_requests
+from configuration_controller.tests.fixtures.fake_responses.spectrum_inquiry_responses import \
+    single_channel_for_one_cbsd, two_channels_for_one_cbsd, zero_channels_for_one_cbsd
 from db_service.models import DBGrantState, DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, \
     DBCbsdState, DBGrant
 from db_service.tests.db_testcase import DBTestCase
@@ -151,6 +153,64 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
 
         states = [req.cbsd.state for req in db_requests]
         [self.assertTrue(state.name == expected_cbsd_state.value) for state in states]
+
+    @parameterized.expand([
+        (zero_channels_for_one_cbsd, 0),
+        (single_channel_for_one_cbsd, 1),
+        (two_channels_for_one_cbsd, 2)
+    ])
+    @responses.activate
+    def test_channels_created_after_spectrum_inquiry_response(self, response_fixture_payload, expected_channels_count):
+        # Given
+        db_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
+        req_pending_state = DBRequestState(name=RequestStates.PENDING.value)
+        req_processed_state = DBRequestState(name=RequestStates.PROCESSED.value)
+        grant_state_idle = DBGrantState(name=GrantStates.IDLE.value)
+        grant_state_granted = DBGrantState(name=GrantStates.GRANTED.value)
+        grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
+        req_type = DBRequestType(name=RequestTypes.SPECTRUM_INQUIRY.value)
+
+        self.session.add_all([
+            db_cbsd_state,
+            req_processed_state,
+            req_pending_state,
+            grant_state_granted,
+            grant_state_authorized,
+            grant_state_idle,
+            req_type
+        ])
+        self.session.commit()
+
+        cbsd = DBCbsd(
+            cbsd_id="foo",
+            user_id="user1",
+            fcc_id="fccId1",
+            cbsd_serial_number="abc123",
+            eirp_capability=1.23,
+            state=db_cbsd_state,
+            )
+
+        self.assertListEqual([], cbsd.channels)
+
+        db_request = DBRequest(
+            payload=spectrum_inquiry_requests[0]["spectrumInquiryRequest"][0],
+            state=req_pending_state,
+            type=req_type,
+            cbsd=cbsd
+        )
+
+        self.session.add(db_request)
+        self.session.commit()
+
+        response, processor = self._prepare_response_and_processor(
+            response_fixture_payload, "spectrumInquiryResponse", processor_strategies["spectrumInquiryRequest"])
+
+        # When
+        processor.process_response([db_request], response, self.session)
+        self.session.commit()
+
+        # Then
+        self.assertEqual(expected_channels_count, len(cbsd.channels))
 
     def _get_db_requests_and_response_payload(
             self, request_type_name, response_type_name, requests_fixtures, cbsd_state):
