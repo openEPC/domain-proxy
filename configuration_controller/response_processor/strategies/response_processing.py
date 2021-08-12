@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from configuration_controller.response_processor.response_db_processor import ResponseDBProcessor
@@ -96,6 +97,7 @@ def process_heartbeat_response(obj: ResponseDBProcessor, response: DBResponse, s
         new_state = grant.state
     logger.info(f'process_heartbeat_responses: Updating grant state from {grant.state} to {new_state}')
     grant.state = new_state
+    grant.last_heartbeat_request_time = datetime.now(timezone.utc)  # TODO use different timezone?
 
 
 def process_relinquishment_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:
