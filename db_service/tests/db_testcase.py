@@ -31,7 +31,7 @@ class DBTestCase(unittest.TestCase):
         self.engine = create_engine(
             url=config.SQLALCHEMY_DB_URI,
             encoding=config.SQLALCHEMY_DB_ENCODING,
-            echo=config.SQLALCHEMY_ECHO,
+            echo=True,
             future=config.SQLALCHEMY_FUTURE
         )
         self.session = Session()
