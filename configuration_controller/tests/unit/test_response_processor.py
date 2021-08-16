@@ -155,6 +155,45 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         [self.assertTrue(state.name == expected_cbsd_state.value) for state in states]
 
     @parameterized.expand([
+        (0, CbsdStates.UNREGISTERED),
+        (400, CbsdStates.UNREGISTERED),
+        (500, CbsdStates.UNREGISTERED),
+    ])
+    @responses.activate
+    def test_cbsd_state_after_deregistration_response(self, sas_response_code, expected_cbsd_state):
+        unregistered_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
+        registered_cbsd_state = DBCbsdState(name=CbsdStates.REGISTERED.value)
+        self.session.add_all([unregistered_cbsd_state, registered_cbsd_state])
+        self.session.commit()
+
+        db_requests = self._create_db_requests_from_fixture(
+            request_state=DBRequestState(name=RequestStates.PENDING.value),
+            request_type=DBRequestType(name="deregistrationRequest"),
+            fixture=deregistration_requests,
+            cbsd_state=unregistered_cbsd_state,
+        )
+        self.session.add_all(db_requests)
+        self.session.commit()
+
+        self.session.query(DBCbsd).update({DBCbsd.state_id: registered_cbsd_state.id})
+        self.session.commit()
+
+        response_payload = self._create_response_payload_from_db_requests(
+            response_type_name="deregistrationResponse",
+            db_requests=db_requests,
+            sas_response_code=sas_response_code
+        )
+
+        response, processor = self._prepare_response_and_processor(
+            response_payload, "deregistrationResponse", processor_strategies["deregistrationRequest"])
+
+        processor.process_response(db_requests, response, self.session)
+        self.session.commit()
+
+        states = [req.cbsd.state for req in db_requests]
+        [self.assertTrue(state.name == expected_cbsd_state.value) for state in states]
+
+    @parameterized.expand([
         (zero_channels_for_one_cbsd, 0),
         (single_channel_for_one_cbsd, 1),
         (two_channels_for_one_cbsd, 2)

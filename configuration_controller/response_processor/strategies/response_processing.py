@@ -19,14 +19,14 @@ CHANNEL_TYPE = "channelType"
 
 
 def process_registration_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:
+    cbsd_id = response.payload.get("cbsdId", None)
     if response.response_code == ResponseCodes.DEREGISTER.value:
         _terminate_all_grants_from_response(obj, response, session)
-    elif response.response_code == ResponseCodes.SUCCESS.value and response.payload.get("cbsdId", None):
-        _change_cbsd_state(response, session, CbsdStates.REGISTERED.value)
+    elif response.response_code == ResponseCodes.SUCCESS.value and cbsd_id:
+        _change_cbsd_state(cbsd_id, session, CbsdStates.REGISTERED.value)
 
 
-def _change_cbsd_state(response: DBResponse, session: Session, new_state: str) -> None:
-    cbsd_id = response.payload["cbsdId"]
+def _change_cbsd_state(cbsd_id: str, session: Session, new_state: str) -> None:
     cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).scalar()
     state = session.query(DBCbsdState).filter(DBCbsdState.name == new_state).scalar()
     cbsd.state = state
@@ -116,8 +116,14 @@ def process_relinquishment_response(obj: ResponseDBProcessor, response: DBRespon
 
 
 def process_deregistration_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:
+    # Is this a bug ?
+    # according to documentation 8.8.2
+    # cbsd should be unregistered regardless of response code
     if response.response_code in [ResponseCodes.SUCCESS.value, ResponseCodes.DEREGISTER.value]:
         _terminate_all_grants_from_response(obj, response, session)
+    cbsd_id = response.payload.get("cbsdId", None)
+    if cbsd_id:
+        _change_cbsd_state(cbsd_id, session, CbsdStates.UNREGISTERED.value)
 
 
 def _get_or_create_grant_from_response(obj: ResponseDBProcessor,
