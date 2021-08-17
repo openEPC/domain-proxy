@@ -42,8 +42,6 @@ def process_spectrum_inquiry_response(obj: ResponseDBProcessor, response: DBResp
 def _create_channels(response: DBResponse, session: Session):
     cbsd_id = response.request.payload["cbsdId"]
     cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).scalar()
-    # delete existing db channel if any
-    # this should have been done when receiving a new spectrumInquiryRequest, this is just a safety measure
     session.query(DBChannel).filter(DBChannel.cbsd == cbsd).delete()
     available_channels = response.payload.get("availableChannel")
     if not available_channels:

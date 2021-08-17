@@ -16,7 +16,7 @@ from configuration_controller.tests.fixtures.fake_requests.spectrum_inquiry_requ
 from configuration_controller.tests.fixtures.fake_responses.spectrum_inquiry_responses import \
     single_channel_for_one_cbsd, two_channels_for_one_cbsd, zero_channels_for_one_cbsd
 from db_service.models import DBGrantState, DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, \
-    DBCbsdState, DBGrant
+    DBCbsdState, DBGrant, DBChannel
 from db_service.tests.db_testcase import DBTestCase
 from mappings.types import GrantStates, RequestStates, RequestTypes, CbsdStates
 
@@ -250,6 +250,70 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
 
         # Then
         self.assertEqual(expected_channels_count, len(cbsd.channels))
+
+    @responses.activate
+    def test_channels_created_after_spectrum_inquiry_response(self):
+        # TODO cleanup tests (currently a lot of duplications)
+        # Given
+        db_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
+        req_pending_state = DBRequestState(name=RequestStates.PENDING.value)
+        req_processed_state = DBRequestState(name=RequestStates.PROCESSED.value)
+        grant_state_idle = DBGrantState(name=GrantStates.IDLE.value)
+        grant_state_granted = DBGrantState(name=GrantStates.GRANTED.value)
+        grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
+        req_type = DBRequestType(name=RequestTypes.SPECTRUM_INQUIRY.value)
+
+        self.session.add_all([
+            db_cbsd_state,
+            req_processed_state,
+            req_pending_state,
+            grant_state_granted,
+            grant_state_authorized,
+            grant_state_idle,
+            req_type
+        ])
+        self.session.commit()
+
+        cbsd = DBCbsd(
+            cbsd_id="foo",
+            user_id="user1",
+            fcc_id="fccId1",
+            cbsd_serial_number="abc123",
+            eirp_capability=1.23,
+            state=db_cbsd_state,
+        )
+        channel = DBChannel(
+            low_frequency=1,
+            high_frequency=2,
+            channel_type="some_type",
+            rule_applied="some_rule",
+            cbsd=cbsd,
+        )
+
+        self.session.add_all([cbsd, channel])
+        self.session.commit()
+
+        self.assertEqual(1, len(cbsd.channels))
+
+        db_request = DBRequest(
+            payload=spectrum_inquiry_requests[0]["spectrumInquiryRequest"][0],
+            state=req_pending_state,
+            type=req_type,
+            cbsd=cbsd
+        )
+
+        self.session.add(db_request)
+        self.session.commit()
+
+        response, processor = self._prepare_response_and_processor(
+            zero_channels_for_one_cbsd, "spectrumInquiryResponse", processor_strategies["spectrumInquiryRequest"])
+
+        # When
+        processor.process_response([db_request], response, self.session)
+        self.session.commit()
+
+        # Then
+        self.assertEqual(0, len(cbsd.channels))
 
     def _get_db_requests_and_response_payload(
             self, request_type_name, response_type_name, requests_fixtures, cbsd_state):
