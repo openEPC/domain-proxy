@@ -14,6 +14,7 @@ from configuration_controller.response_processor.strategies.response_processing 
     process_spectrum_inquiry_response,
 )
 
+# TODO use enum and constants here
 processor_strategies = {
     "registrationRequest": {
         "request_map_key": generate_registration_request_map_key,

@@ -15,8 +15,10 @@ from configuration_controller.tests.fixtures.fake_requests.relinquishment_reques
 from configuration_controller.tests.fixtures.fake_requests.spectrum_inquiry_requests import spectrum_inquiry_requests
 from configuration_controller.tests.fixtures.fake_responses.spectrum_inquiry_responses import \
     single_channel_for_one_cbsd, two_channels_for_one_cbsd, zero_channels_for_one_cbsd
+from db_service.db_initialize import DBInitializer
 from db_service.models import DBGrantState, DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, \
     DBCbsdState, DBGrant, DBChannel
+from db_service.session_manager import SessionManager
 from db_service.tests.db_testcase import DBTestCase
 from mappings.types import GrantStates, RequestStates, RequestTypes, CbsdStates
 
@@ -28,6 +30,9 @@ TEST_STATE = "test_state"
 
 
 class DefaultResponseDBProcessorTestCase(DBTestCase):
+    def setUp(self):
+        super().setUp()
+        DBInitializer(SessionManager(self.engine)).initialize()
 
     @parameterized.expand([
         (processor_strategies["registrationRequest"], registration_requests),
@@ -124,16 +129,11 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
     ])
     @responses.activate
     def test_cbsd_state_after_registration_response(self, sas_response_code, expected_cbsd_state):
-        unregistered_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
-        registered_cbsd_state = DBCbsdState(name=CbsdStates.REGISTERED.value)
-        self.session.add_all([unregistered_cbsd_state, registered_cbsd_state])
-        self.session.commit()
-
         db_requests = self._create_db_requests_from_fixture(
-            request_state=DBRequestState(name=RequestStates.PENDING.value),
-            request_type=DBRequestType(name="registrationRequest"),
+            request_state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            request_type=self._get_db_enum(DBRequestType, RequestTypes.REGISTRATION.value),
             fixture=registration_requests,
-            cbsd_state=unregistered_cbsd_state,
+            cbsd_state=self._get_db_enum(DBCbsdState, CbsdStates.UNREGISTERED.value),
         )
 
         self.session.add_all(db_requests)
@@ -161,21 +161,17 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
     ])
     @responses.activate
     def test_cbsd_state_after_deregistration_response(self, sas_response_code, expected_cbsd_state):
-        unregistered_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
-        registered_cbsd_state = DBCbsdState(name=CbsdStates.REGISTERED.value)
-        self.session.add_all([unregistered_cbsd_state, registered_cbsd_state])
-        self.session.commit()
-
         db_requests = self._create_db_requests_from_fixture(
-            request_state=DBRequestState(name=RequestStates.PENDING.value),
-            request_type=DBRequestType(name="deregistrationRequest"),
+            request_state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            request_type=self._get_db_enum(DBRequestType, RequestTypes.DEREGISTRATION.value),
             fixture=deregistration_requests,
-            cbsd_state=unregistered_cbsd_state,
+            cbsd_state=self._get_db_enum(DBCbsdState, CbsdStates.UNREGISTERED.value)
         )
         self.session.add_all(db_requests)
         self.session.commit()
 
-        self.session.query(DBCbsd).update({DBCbsd.state_id: registered_cbsd_state.id})
+        registered_state = self._get_db_enum(DBCbsdState, CbsdStates.REGISTERED.value)
+        self.session.query(DBCbsd).update({DBCbsd.state_id: registered_state.id})
         self.session.commit()
 
         response_payload = self._create_response_payload_from_db_requests(
@@ -201,40 +197,21 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
     @responses.activate
     def test_channels_created_after_spectrum_inquiry_response(self, response_fixture_payload, expected_channels_count):
         # Given
-        db_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
-        req_pending_state = DBRequestState(name=RequestStates.PENDING.value)
-        req_processed_state = DBRequestState(name=RequestStates.PROCESSED.value)
-        grant_state_idle = DBGrantState(name=GrantStates.IDLE.value)
-        grant_state_granted = DBGrantState(name=GrantStates.GRANTED.value)
-        grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
-        req_type = DBRequestType(name=RequestTypes.SPECTRUM_INQUIRY.value)
-
-        self.session.add_all([
-            db_cbsd_state,
-            req_processed_state,
-            req_pending_state,
-            grant_state_granted,
-            grant_state_authorized,
-            grant_state_idle,
-            req_type
-        ])
-        self.session.commit()
-
         cbsd = DBCbsd(
             cbsd_id="foo",
             user_id="user1",
             fcc_id="fccId1",
             cbsd_serial_number="abc123",
             eirp_capability=1.23,
-            state=db_cbsd_state,
+            state=self._get_db_enum(DBCbsdState, CbsdStates.UNREGISTERED.value),
             )
 
         self.assertListEqual([], cbsd.channels)
 
         db_request = DBRequest(
             payload=spectrum_inquiry_requests[0]["spectrumInquiryRequest"][0],
-            state=req_pending_state,
-            type=req_type,
+            state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            type=self._get_db_enum(DBRequestType, RequestTypes.SPECTRUM_INQUIRY.value),
             cbsd=cbsd
         )
 
@@ -252,35 +229,16 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         self.assertEqual(expected_channels_count, len(cbsd.channels))
 
     @responses.activate
-    def test_channels_created_after_spectrum_inquiry_response(self):
+    def test_old_channels_deleted_after_spectrum_inquiry_response(self):
         # TODO cleanup tests (currently a lot of duplications)
         # Given
-        db_cbsd_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
-        req_pending_state = DBRequestState(name=RequestStates.PENDING.value)
-        req_processed_state = DBRequestState(name=RequestStates.PROCESSED.value)
-        grant_state_idle = DBGrantState(name=GrantStates.IDLE.value)
-        grant_state_granted = DBGrantState(name=GrantStates.GRANTED.value)
-        grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
-        req_type = DBRequestType(name=RequestTypes.SPECTRUM_INQUIRY.value)
-
-        self.session.add_all([
-            db_cbsd_state,
-            req_processed_state,
-            req_pending_state,
-            grant_state_granted,
-            grant_state_authorized,
-            grant_state_idle,
-            req_type
-        ])
-        self.session.commit()
-
         cbsd = DBCbsd(
             cbsd_id="foo",
             user_id="user1",
             fcc_id="fccId1",
             cbsd_serial_number="abc123",
             eirp_capability=1.23,
-            state=db_cbsd_state,
+            state=self._get_db_enum(DBCbsdState, CbsdStates.UNREGISTERED.value),
         )
         channel = DBChannel(
             low_frequency=1,
@@ -297,8 +255,8 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
 
         db_request = DBRequest(
             payload=spectrum_inquiry_requests[0]["spectrumInquiryRequest"][0],
-            state=req_pending_state,
-            type=req_type,
+            state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            type=self._get_db_enum(DBRequestType, RequestTypes.SPECTRUM_INQUIRY.value),
             cbsd=cbsd
         )
 
@@ -317,27 +275,13 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
 
     def _get_db_requests_and_response_payload(
             self, request_type_name, response_type_name, requests_fixtures, cbsd_state):
-        pending_state = DBRequestState(name=RequestStates.PENDING.value)
-        processed_state = DBRequestState(name=RequestStates.PROCESSED.value)
-        grant_state_idle = DBGrantState(name=GrantStates.IDLE.value)
-        grant_state_granted = DBGrantState(name=GrantStates.GRANTED.value)
-        grant_state_authorized = DBGrantState(name=GrantStates.AUTHORIZED.value)
-        request_type = DBRequestType(name=request_type_name)
-
         db_requests = self._create_db_requests_from_fixture(
-            request_state=pending_state,
-            request_type=request_type,
+            request_state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            request_type=self._get_db_enum(DBRequestType, request_type_name),
             fixture=requests_fixtures,
             cbsd_state=cbsd_state,
         )
 
-        self.session.add_all([
-            pending_state,
-            processed_state,
-            grant_state_idle,
-            grant_state_granted,
-            grant_state_authorized
-        ])
         self.session.add_all(db_requests)
         self.session.commit()
 
@@ -346,6 +290,9 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
             db_requests=db_requests)
 
         return db_requests, response_payload
+
+    def _get_db_enum(self, data_type, name):
+        return self.session.query(data_type).filter(data_type.name == name).first()
 
     @staticmethod
     def _prepare_response_and_processor(response_payload, response_type_name, processor_strategy):
