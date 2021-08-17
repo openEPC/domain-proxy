@@ -71,28 +71,22 @@ class RadioControllerService(RadioControllerServicer):
         return ResponsePayload(payload=json.dumps(response.payload))
 
     def _get_or_create_cbsd(self, session: Session, request_type: str, request_json: Dict) -> Optional[DBCbsd]:
-        cbsd_id = self.get_cbsd_id(request_type, request_json)
+        cbsd_id = self._get_cbsd_id(request_type, request_json)
         cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).first()
-        if cbsd:
-            return cbsd
-        elif request_type == RequestTypes.REGISTRATION.value:
-            return self._create_cbsd_from_registration_request(session, request_json, cbsd_id)
-        else:
-            logger.error(f"Unable to create CBSD from {request_type}")
-            return None
+        return cbsd if cbsd else self._create_cbsd(session, request_json, cbsd_id)
 
     @staticmethod
-    def get_cbsd_id(request_name: str, request_payload: Dict):
+    def _get_cbsd_id(request_name: str, request_payload: Dict):
         return get_cbsd_id_strategies[request_name](request_payload)
 
     @staticmethod
-    def _create_cbsd_from_registration_request(session, request_json, cbsd_id):
-        logger.info(f"Creating new CBSD with cbsdId {cbsd_id}")
+    def _create_cbsd(session: Session, request_payload: Dict, cbsd_id: str):
+        logging.info(f"Creating new CBSD with cbsdId {cbsd_id}")
         cbsd_state = session.query(DBCbsdState).filter(DBCbsdState.name == CbsdStates.UNREGISTERED.name).scalar()
-        user_id = request_json.get("userId", None)
-        fcc_id = request_json.get("fccId", None)
-        cbsd_serial_number = request_json.get("cbsdSerialNumber", None)
-        installation_param = request_json.get("installationParam", None)
+        user_id = request_payload.get("userId", None)
+        fcc_id = request_payload.get("fccId", None)
+        cbsd_serial_number = request_payload.get("cbsdSerialNumber", None)
+        installation_param = request_payload.get("installationParam", None)
         eirp_capability = None
         if installation_param:
             eirp_capability = installation_param.get("eirpCapability", None)
@@ -105,5 +99,5 @@ class RadioControllerService(RadioControllerServicer):
             eirp_capability=eirp_capability,
         )
         session.add(cbsd)
-        logger.info(f"New CBSD with cbsdId {cbsd_id} created")
+        logging.info(f"New CBSD with cbsdId {cbsd_id} created")
         return cbsd

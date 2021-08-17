@@ -44,21 +44,21 @@ class RadioControllerTestCase(DBTestCase):
                {"fccId": "foo1", "cbsdSerialNumber": "foo2"}]}, [1, 2]),
         ({"deregistrationRequest":
               [{"cbsdId": "foo1"},
-               {"cbsdId": "foo1"}]}, []),
+               {"cbsdId": "foo1"}]}, [1, 2]),
         ({"relinquishmentRequest":
               [{"cbsdId": "foo1"},
-               {"cbsdId": "foo1"}]}, []),
+               {"cbsdId": "foo1"}]}, [1, 2]),
         ({"heartbeatRequest":
               [{"cbsdId": "foo1"},
-               {"cbsdId": "foo1"}]}, []),
+               {"cbsdId": "foo1"}]}, [1, 2]),
         ({"grantRequest":
               [{"cbsdId": "foo1"},
-               {"cbsdId": "foo1"}]}, []),
+               {"cbsdId": "foo1"}]}, [1, 2]),
         ({"spectrumInquiryRequest":
               [{"cbsdId": "foo1"},
-               {"cbsdId": "foo1"}]}, []),
+               {"cbsdId": "foo1"}]}, [1, 2]),
     ])
-    def test_store_requests_from_map_stores_requests_in_db_only_for_registration_reqs(self, request_map, expected_list):
+    def test_store_requests_from_map_stores_requests_in_db(self, request_map, expected_list):
         # Given
 
         # When
