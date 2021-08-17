@@ -156,7 +156,6 @@ class DBChannel(Base):
     __tablename__ = "channel"
     id = Column(Integer, primary_key=True, autoincrement=True)
     cbsd_id = Column(Integer, ForeignKey("cbsd.id"))
-    # FIXME below fields are non nullable but the parameter in SAS response containing those values is optional
     low_frequency = Column(Integer, nullable=False)
     high_frequency = Column(Integer, nullable=False)
     channel_type = Column(String, nullable=False)
