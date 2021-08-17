@@ -20,13 +20,11 @@ class ActiveModeControllerTestCase(DBTestCase):
     def test_get_state(self):
         # Given
         grant_states = {x.name: x.id for x in self.session.query(DBGrantState).all()}
-
-        unregistered_state = DBCbsdState(name=CbsdStates.UNREGISTERED.value)
-        registered_state = DBCbsdState(name=CbsdStates.REGISTERED.value)
+        cbsd_states = {x.name: x.id for x in self.session.query(DBCbsdState).all()}
 
         some_cbsd = DBCbsd(
             id=1,
-            state=registered_state,
+            state_id=cbsd_states[CbsdStates.REGISTERED.value],
             cbsd_id="some_cbsd_id",
             user_id="some_user_id",
             fcc_id="some_fcc_id",
@@ -35,12 +33,12 @@ class ActiveModeControllerTestCase(DBTestCase):
         )
         other_cbsd = DBCbsd(
             id=2,
-            state=unregistered_state,
+            state_id=cbsd_states[CbsdStates.UNREGISTERED.value],
             cbsd_id="other_cbsd_id",
         )
         cbsd_without_active_mode = DBCbsd(
             id=3,
-            state=registered_state,
+            state_id=cbsd_states[CbsdStates.REGISTERED.value],
             cbsd_id="cbsd_without_active_mode_id"
         )
         cbsds = [some_cbsd, other_cbsd, cbsd_without_active_mode]
@@ -48,12 +46,12 @@ class ActiveModeControllerTestCase(DBTestCase):
             DBActiveModeConfig(
                 id=1,
                 cbsd_id=some_cbsd.id,
-                desired_state=registered_state,
+                desired_state_id=cbsd_states[CbsdStates.REGISTERED.value],
             ),
             DBActiveModeConfig(
                 id=2,
                 cbsd_id=other_cbsd.id,
-                desired_state=unregistered_state,
+                desired_state_id=cbsd_states[CbsdStates.UNREGISTERED.value],
             ),
         ]
         grants = [
