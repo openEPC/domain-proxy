@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, DBCbsdState
 from db_service.session_manager import SessionManager, Session
 from mappings.types import RequestStates, CbsdStates, RequestTypes
-from radio_controller.services.radio_controller.strategies.strategies_mapping import request_strategies
+from radio_controller.services.radio_controller.strategies.strategies_mapping import get_cbsd_id_strategies
 from requests_pb2 import RequestDbId, RequestDbIds, RequestPayload, ResponsePayload
 from requests_pb2_grpc import RadioControllerServicer
 
@@ -59,7 +59,6 @@ class RadioControllerService(RadioControllerServicer):
                     session.add(db_request)
                     session.flush()
                     request_db_ids.append(db_request.id)
-                    self.postprocess_request(db_request, session)
             session.commit()
         return request_db_ids
 
@@ -70,10 +69,6 @@ class RadioControllerService(RadioControllerServicer):
         if not response:
             return ResponsePayload(payload='{}')
         return ResponsePayload(payload=json.dumps(response.payload))
-
-    @staticmethod
-    def postprocess_request(db_request, session):
-        return request_strategies[db_request.type.name]["request_postprocessing"](db_request, session)
 
     def _get_or_create_cbsd(self, session: Session, request_type: str, request_json: Dict) -> Optional[DBCbsd]:
         cbsd_id = self.get_cbsd_id(request_type, request_json)
@@ -88,7 +83,7 @@ class RadioControllerService(RadioControllerServicer):
 
     @staticmethod
     def get_cbsd_id(request_name: str, request_payload: Dict):
-        return request_strategies[request_name]["get_cbsd_id"](request_payload)
+        return get_cbsd_id_strategies[request_name](request_payload)
 
     @staticmethod
     def _create_cbsd_from_registration_request(session, request_json, cbsd_id):

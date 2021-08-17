@@ -99,7 +99,7 @@ class RadioControllerTestCase(DBTestCase):
         (1,),
         (2,),
     ])
-    def test_channels_deleted_when_new_spectrum_inquiry_request_arrives(self, number_of_channels):
+    def test_channels_not_deleted_when_new_spectrum_inquiry_request_arrives(self, number_of_channels):
         # Given
         cbsd = DBCbsd(id=1, cbsd_id="foo1")
 
@@ -118,7 +118,7 @@ class RadioControllerTestCase(DBTestCase):
         cbsd_channels_count_post_request = len(cbsd.channels)
 
         # Then
-        self.assertEqual(0, cbsd_channels_count_post_request)
+        self.assertEqual(number_of_channels, cbsd_channels_count_post_request)
 
     def _create_channels_for_cbsd(self, cbsd: DBCbsd, number: int):
         channels = [
