@@ -197,49 +197,42 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
     @responses.activate
     def test_channels_created_after_spectrum_inquiry_response(self, response_fixture_payload, expected_channels_count):
         # Given
-        cbsd = DBCbsd(
-            cbsd_id="foo",
-            user_id="user1",
-            fcc_id="fccId1",
-            cbsd_serial_number="abc123",
-            eirp_capability=1.23,
-            state=self._get_db_enum(DBCbsdState, CbsdStates.UNREGISTERED.value),
-            )
-
-        self.assertListEqual([], cbsd.channels)
-
-        db_request = DBRequest(
-            payload=spectrum_inquiry_requests[0]["spectrumInquiryRequest"][0],
-            state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
-            type=self._get_db_enum(DBRequestType, RequestTypes.SPECTRUM_INQUIRY.value),
-            cbsd=cbsd
+        db_requests = self._create_db_requests_from_fixture(
+            request_state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            request_type=self._get_db_enum(DBRequestType, RequestTypes.SPECTRUM_INQUIRY.value),
+            fixture=spectrum_inquiry_requests,
+            cbsd_state=self._get_db_enum(DBCbsdState, CbsdStates.REGISTERED.value),
         )
 
-        self.session.add(db_request)
+        self.session.add_all(db_requests)
         self.session.commit()
 
         response, processor = self._prepare_response_and_processor(
             response_fixture_payload, "spectrumInquiryResponse", processor_strategies["spectrumInquiryRequest"])
 
         # When
-        processor.process_response([db_request], response, self.session)
+        processor.process_response(db_requests, response, self.session)
         self.session.commit()
 
         # Then
+        cbsd = self.session.query(DBCbsd).filter(DBCbsd.cbsd_id == "foo").first()
         self.assertEqual(expected_channels_count, len(cbsd.channels))
 
     @responses.activate
     def test_old_channels_deleted_after_spectrum_inquiry_response(self):
         # TODO cleanup tests (currently a lot of duplications)
         # Given
-        cbsd = DBCbsd(
-            cbsd_id="foo",
-            user_id="user1",
-            fcc_id="fccId1",
-            cbsd_serial_number="abc123",
-            eirp_capability=1.23,
-            state=self._get_db_enum(DBCbsdState, CbsdStates.UNREGISTERED.value),
+        db_requests = self._create_db_requests_from_fixture(
+            request_state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            request_type=self._get_db_enum(DBRequestType, RequestTypes.SPECTRUM_INQUIRY.value),
+            fixture=spectrum_inquiry_requests,
+            cbsd_state=self._get_db_enum(DBCbsdState, CbsdStates.REGISTERED.value),
         )
+
+        self.session.add_all(db_requests)
+        self.session.commit()
+
+        cbsd = self.session.query(DBCbsd).filter(DBCbsd.cbsd_id == "foo").first()
         channel = DBChannel(
             low_frequency=1,
             high_frequency=2,
@@ -247,27 +240,16 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
             rule_applied="some_rule",
             cbsd=cbsd,
         )
-
-        self.session.add_all([cbsd, channel])
+        self.session.add_all([channel])
         self.session.commit()
 
         self.assertEqual(1, len(cbsd.channels))
-
-        db_request = DBRequest(
-            payload=spectrum_inquiry_requests[0]["spectrumInquiryRequest"][0],
-            state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
-            type=self._get_db_enum(DBRequestType, RequestTypes.SPECTRUM_INQUIRY.value),
-            cbsd=cbsd
-        )
-
-        self.session.add(db_request)
-        self.session.commit()
 
         response, processor = self._prepare_response_and_processor(
             zero_channels_for_one_cbsd, "spectrumInquiryResponse", processor_strategies["spectrumInquiryRequest"])
 
         # When
-        processor.process_response([db_request], response, self.session)
+        processor.process_response(db_requests, response, self.session)
         self.session.commit()
 
         # Then
@@ -308,7 +290,7 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         )
         return response, processor
 
-    def _generate_cbsd_from_request_json(self, request_payload: Dict, cbsd_state):
+    def _generate_cbsd_from_request_json(self, request_payload: Dict, cbsd_state: DBCbsdState):
         cbsd_id = request_payload.get(CBSD_ID, "")
         fcc_id = request_payload.get(FCC_ID)
         serial_number = request_payload.get(CBSD_SERIAL_NR)
