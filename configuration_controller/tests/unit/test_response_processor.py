@@ -233,15 +233,7 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         self.session.commit()
 
         cbsd = self.session.query(DBCbsd).filter(DBCbsd.cbsd_id == "foo").first()
-        channel = DBChannel(
-            low_frequency=1,
-            high_frequency=2,
-            channel_type="some_type",
-            rule_applied="some_rule",
-            cbsd=cbsd,
-        )
-        self.session.add_all([channel])
-        self.session.commit()
+        self._create_channel(cbsd, 1, 2)
 
         self.assertEqual(1, len(cbsd.channels))
 
@@ -254,6 +246,41 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
 
         # Then
         self.assertEqual(0, len(cbsd.channels))
+
+    @responses.activate
+    def test_max_eirp_set_on_channel_on_grant_response(self):
+        # Given
+        cbsd_id = "foo"
+        low_frequency = 1
+        high_frequency = 2
+        max_eirp = 3
+
+        fixture = self._build_grant_request(cbsd_id, low_frequency, high_frequency, max_eirp)
+        db_requests = self._create_db_requests_from_fixture(
+            request_state=self._get_db_enum(DBRequestState, RequestStates.PENDING.value),
+            request_type=self._get_db_enum(DBRequestType, RequestTypes.GRANT.value),
+            fixture=[fixture],
+            cbsd_state=self._get_db_enum(DBCbsdState, CbsdStates.REGISTERED.value),
+        )
+
+        self.session.add_all(db_requests)
+        self.session.commit()
+
+        cbsd = self.session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).first()
+        channel = self._create_channel(cbsd, low_frequency, high_frequency)
+
+        response_payload = self._create_response_payload_from_db_requests(
+            response_type_name="grantResponse",
+            db_requests=db_requests)
+        response, processor = self._prepare_response_and_processor(
+            response_payload, "grantResponse", processor_strategies["grantRequest"])
+
+        # When
+        processor.process_response(db_requests, response, self.session)
+        self.session.commit()
+
+        # Then
+        self.assertEqual(max_eirp, channel.last_used_max_eirp)
 
     def _get_db_requests_and_response_payload(
             self, request_type_name, response_type_name, requests_fixtures, cbsd_state):
@@ -310,6 +337,35 @@ class DefaultResponseDBProcessorTestCase(DBTestCase):
         self.session.commit()
 
         return cbsd
+
+    @staticmethod
+    def _build_grant_request(cbsd_id: str, low_frequency: int, high_frequency: int, max_eirp: int) -> Dict:
+        return {
+            "grantRequest": [
+                {
+                    "cbsdId": cbsd_id,
+                    "operationParam": {
+                        "maxEirp": max_eirp,
+                        "operationFrequencyRange": {
+                            "lowFrequency": low_frequency,
+                            "highFrequency": high_frequency,
+                        }
+                    },
+                }
+            ]
+        }
+
+    def _create_channel(self, cbsd: DBCbsd, low_frequency: int, high_frequency: int) -> DBChannel:
+        channel = DBChannel(
+            cbsd=cbsd,
+            low_frequency=low_frequency,
+            high_frequency=high_frequency,
+            channel_type="some_type",
+            rule_applied="some_rule",
+        )
+        self.session.add(channel)
+        self.session.commit()
+        return channel
 
     @staticmethod
     def _get_request_type_from_fixture(fixture):

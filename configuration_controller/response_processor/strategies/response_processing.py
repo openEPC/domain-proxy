@@ -64,6 +64,7 @@ def _create_channels(response: DBResponse, session: Session):
 def process_grant_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:
     grant = _get_or_create_grant_from_response(obj, response, session)
     _update_grant_from_response(response, grant)
+    _update_max_eirp_of_channel_related_to_grant(response, session)
 
     # Grant response codes worth considering here also are:
     # 400 - INTERFERENCE
@@ -75,6 +76,19 @@ def process_grant_response(obj: ResponseDBProcessor, response: DBResponse, sessi
         new_state = obj.grant_states_map[GrantStates.IDLE.value]
     logger.info(f'process_grant_responses: Updating grant state from {grant.state} to {new_state}')
     grant.state = new_state
+
+
+def _update_max_eirp_of_channel_related_to_grant(response: DBResponse, session: Session) -> None:
+    payload = response.request.payload
+    operation_param = payload["operationParam"]
+    frequency_range = operation_param["operationFrequencyRange"]
+    channel = session.query(DBChannel).join(DBCbsd).filter(
+        DBCbsd.cbsd_id == payload["cbsdId"],
+        DBChannel.low_frequency == frequency_range["lowFrequency"],
+        DBChannel.high_frequency == frequency_range["highFrequency"],
+    ).scalar()
+    if channel:
+        channel.last_used_max_eirp = operation_param["maxEirp"]
 
 
 def process_heartbeat_response(obj: ResponseDBProcessor, response: DBResponse, session: Session) -> None:
