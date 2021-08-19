@@ -83,7 +83,6 @@ class RadioControllerService(RadioControllerServicer):
     def _create_cbsd(session: Session, request_payload: Dict, cbsd_id: str):
         logging.info(f"Creating new CBSD with cbsdId {cbsd_id}")
         cbsd_state = session.query(DBCbsdState).filter(DBCbsdState.name == CbsdStates.UNREGISTERED.value).scalar()
-        logging.info(f"??????????????????????{cbsd_state=}")
         user_id = request_payload.get("userId", None)
         fcc_id = request_payload.get("fccId", None)
         cbsd_serial_number = request_payload.get("cbsdSerialNumber", None)
