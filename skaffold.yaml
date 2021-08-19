@@ -61,6 +61,15 @@ profiles:
       - op: add
         path: /build/artifacts/-
         value:
+          image: radio-controller-tests
+          context: .
+          docker:
+            dockerfile: radio_controller/Dockerfile
+            buildArgs:
+              ENV: 'tests'
+      - op: add
+        path: /build/artifacts/-
+        value:
           image: protocol-controller-tests
           context: .
           docker:

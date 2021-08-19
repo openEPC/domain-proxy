@@ -4,6 +4,7 @@ option go_package = "github.com/domain-proxy/active_mode_controller/api/active_m
 
 service ActiveModeController {
   rpc GetState(GetStateRequest) returns (State) {}
+  rpc ToggleActiveMode (ToggleActiveModeParams) returns (ToggleActiveModeResponse) {}
 }
 
 message GetStateRequest {}
@@ -54,4 +55,21 @@ message Channel {
 message FrequencyRange {
   int64 low = 1;
   int64 high = 2;
+}
+
+enum Switch {
+  On = 0;
+  Off = 1;
+}
+
+message ToggleActiveModeParams {
+  int64 cbsd_id = 1;
+  Switch switch = 2;
+  optional CbsdState desired_state = 3;
+}
+
+message ToggleActiveModeResponse {
+  int64 cbsd_db_id = 1;
+  bool active_mode_enabled = 2;
+  optional CbsdState cbsd_state = 3;
 }

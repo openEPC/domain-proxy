@@ -35,6 +35,10 @@ class GrantStates(enum.Enum):
     AUTHORIZED = "authorized"
 
 
+class Switch(enum.Enum):
+    ON = "On"
+    OFF = "Off"
+
 class ResponseCodes(enum.Enum):
     # Success
     SUCCESS = 0

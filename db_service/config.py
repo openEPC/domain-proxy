@@ -17,6 +17,7 @@ class DevelopmentConfig(Config):
 
 
 class TestConfig(Config):
+    # SQLALCHEMY_DB_URI = os.environ.get('SQLALCHEMY_DB_URI', 'postgresql+psycopg2://postgres:postgres@db:5432/dp_test')
     pass
 
 
