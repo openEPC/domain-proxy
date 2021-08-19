@@ -119,14 +119,14 @@ class FakeSas(sas_interface.SasInterface):
     for req in request['spectrumInquiryRequest']:
       response['spectrumInquiryResponse'].append({
           'cbsdId': req['cbsdId'],
-          'availableChannel': {
+          'availableChannel': [{
               'frequencyRange': {
                   'lowFrequency': 3620000000,
                   'highFrequency': 3630000000
               },
               'channelType': 'GAA',
               'ruleApplied': 'FCC_PART_96'
-          },
+          }],
           'response': self._GetSuccessResponse()
       })
     return response
