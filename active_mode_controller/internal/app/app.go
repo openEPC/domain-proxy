@@ -95,12 +95,14 @@ func (a *App) connect(ctx context.Context) (*grpc.ClientConn, error) {
 }
 
 func (a *App) getState(ctx context.Context, c active_mode.ActiveModeControllerClient) (*active_mode.State, error) {
+	log.Printf("geting state")
 	reqCtx, cancel := context.WithTimeout(ctx, a.cfg.RequestTimeout)
 	defer cancel()
 	return c.GetState(reqCtx, &active_mode.GetStateRequest{})
 }
 
 func (a *App) uploadRequests(ctx context.Context, c requests.RadioControllerClient, req *requests.RequestPayload) (*requests.RequestDbIds, error) {
+	log.Printf("uploading request: '%s'", req.Payload)
 	reqCtx, cancel := context.WithTimeout(ctx, a.cfg.RequestTimeout)
 	defer cancel()
 	return c.UploadRequests(reqCtx, req)
