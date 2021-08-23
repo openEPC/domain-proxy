@@ -17,7 +17,8 @@ spec:
       containers:
       - name: fake-sas
         #image: domainproxyfw1/harness:0.0.1
-        image: melvin10001/fakesas:0.1.0
+        imagePullPolicy: IfNotPresent
+        image: faketyfake/sas:latest
         volumeMounts:
         - name: certificates
           mountPath: /opt/server/certs

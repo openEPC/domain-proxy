@@ -42,6 +42,7 @@ def process_spectrum_inquiry_response(obj: ResponseDBProcessor, response: DBResp
 def _create_channels(response: DBResponse, session: Session):
     cbsd_id = response.request.payload["cbsdId"]
     cbsd = session.query(DBCbsd).filter(DBCbsd.cbsd_id == cbsd_id).scalar()
+    logger.info(f"Deleting all channels for {cbsd}")
     session.query(DBChannel).filter(DBChannel.cbsd == cbsd).delete()
     available_channels = response.payload.get("availableChannel")
     if not available_channels:
@@ -56,8 +57,9 @@ def _create_channels(response: DBResponse, session: Session):
             high_frequency=frequency_range["highFrequency"],
             channel_type=ac["channelType"],
             rule_applied=ac["ruleApplied"],
-            max_eirp=ac["maxEirp"],
+            max_eirp=ac.get("maxEirp"),
         )
+        logger.info(f"Creating channel for {cbsd}")
         session.add(channel)
 
 

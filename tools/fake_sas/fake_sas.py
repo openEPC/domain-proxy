@@ -125,7 +125,8 @@ class FakeSas(sas_interface.SasInterface):
                   'highFrequency': 3630000000
               },
               'channelType': 'GAA',
-              'ruleApplied': 'FCC_PART_96'
+              'ruleApplied': 'FCC_PART_96',
+              'maxEirp': 37.0
           }],
           'response': self._GetSuccessResponse()
       })

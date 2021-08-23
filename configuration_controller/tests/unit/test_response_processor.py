@@ -16,10 +16,10 @@ from configuration_controller.tests.fixtures.fake_requests.spectrum_inquiry_requ
 from configuration_controller.tests.fixtures.fake_responses.spectrum_inquiry_responses import \
     single_channel_for_one_cbsd, two_channels_for_one_cbsd, zero_channels_for_one_cbsd
 from db_service.db_initialize import DBInitializer
-from db_service.models import DBGrantState, DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, \
+from db_service.models import DBRequest, DBRequestState, DBRequestType, DBResponse, DBCbsd, \
     DBCbsdState, DBGrant, DBChannel
 from db_service.session_manager import SessionManager
-from db_service.tests.db_testcase import DBTestCase
+from db_service.tests.local_db_test_case import LocalDBTestCase
 from mappings.types import GrantStates, RequestStates, RequestTypes, CbsdStates
 
 CBSD_SERIAL_NR = "cbsdSerialNumber"
@@ -29,7 +29,7 @@ GRANT_ID = "grantId"
 TEST_STATE = "test_state"
 
 
-class DefaultResponseDBProcessorTestCase(DBTestCase):
+class DefaultResponseDBProcessorTestCase(LocalDBTestCase):
     def setUp(self):
         super().setUp()
         DBInitializer(SessionManager(self.engine)).initialize()

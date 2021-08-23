@@ -22,8 +22,7 @@ class DevelopmentConfig(Config):
 
 
 class TestConfig(Config):
-    # SQLALCHEMY_DB_URI = db_service.config.TestConfig().SQLALCHEMY_DB_URI
-    pass
+    SQLALCHEMY_DB_URI = db_service.config.TestConfig().SQLALCHEMY_DB_URI
 
 
 class ProductionConfig(Config):

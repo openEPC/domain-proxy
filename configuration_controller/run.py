@@ -22,7 +22,9 @@ from db_service.session_manager import SessionManager
 from mappings.request_mapping import request_mapping
 from mappings.types import RequestTypes
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG,
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    format='%(asctime)s %(levelname)-8s %(message)s')
 logger = logging.getLogger("configuration_controller.run")
 
 
@@ -78,8 +80,8 @@ def run():
 
 
 def get_config() -> Config:
-    app_config = os.environ.get('APP_CONFIG', 'configuration_controller.config.ProductionConfig')
-    config_module = importlib.import_module('.'.join(app_config.split('.')[:-1]))
+    app_config = os.environ.get('APP_CONFIG', 'ProductionConfig')
+    config_module = importlib.import_module('.'.join(f"configuration_controller.config.{app_config}".split('.')[:-1]))
     config_class = getattr(config_module, app_config.split('.')[-1])
     return config_class()
 
@@ -109,7 +111,9 @@ def process_requests(
             logging.error(f"Error posting request to SAS: {e}")
             return
 
+        logger.info(f"About to process responses {sas_response=}")
         processor.process_response(requests_list, sas_response, session)
+
         session.commit()
 
         return sas_response

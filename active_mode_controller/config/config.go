@@ -18,7 +18,7 @@ func Read() (*Config, error) {
 	cfg := &Config{
 		DialTimeout:     time.Second * 60,
 		RequestTimeout:  time.Second * 5,
-		PollingInterval: time.Second * 10,
+		PollingInterval: time.Second * 40,
 		GrpcService:     "domain-proxy-radio-controller",
 		GrpcPort:        50053,
 	}

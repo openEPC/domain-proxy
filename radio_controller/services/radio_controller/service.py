@@ -42,7 +42,7 @@ class RadioControllerService(RadioControllerServicer):
         with self.session_manager.session_scope() as session:
             request_pending_state = session.query(DBRequestState).filter(
                 DBRequestState.name == RequestStates.PENDING.value).scalar()
-            req_type = session.query(DBRequestType).filter(DBRequestType.name == request_type).scalar()
+            req_type = session.query(DBRequestType).filter(DBRequestType.name == request_type).first()
             for request_json in request_map[request_type]:
                 cbsd = self._get_or_create_cbsd(session, request_type, request_json)
                 if not cbsd:
@@ -66,9 +66,10 @@ class RadioControllerService(RadioControllerServicer):
         with self.session_manager.session_scope() as session:
             logger.info(f"Trying to fetch DB response for request id: {request_db_id}")
             response = session.query(DBResponse).filter(DBResponse.request_id == request_db_id).first()
-        if not response:
-            return ResponsePayload(payload='{}')
-        return ResponsePayload(payload=json.dumps(response.payload))
+            session.commit()
+            if not response:
+                return ResponsePayload(payload='{}')
+            return ResponsePayload(payload=json.dumps(response.payload))
 
     def _get_or_create_cbsd(self, session: Session, request_type: str, request_json: Dict) -> Optional[DBCbsd]:
         cbsd_id = self._get_cbsd_id(request_type, request_json)

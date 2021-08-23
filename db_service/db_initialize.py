@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 
 from sqlalchemy import create_engine
@@ -38,7 +39,7 @@ class DBInitializer:
 
 
 def get_config() -> Config:
-    app_config = os.environ.get('APP_CONFIG', 'db_service.config.ProductionConfig')
+    app_config = os.environ.get('APP_CONFIG', 'db_service.config.TestConfig')
     config_module = importlib.import_module('.'.join(app_config.split('.')[:-1]))
     config_class = getattr(config_module, app_config.split('.')[-1])
 

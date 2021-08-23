@@ -1,42 +1,33 @@
 import json
-import logging
 from time import sleep
 
 from active_mode_pb2 import ToggleActiveModeParams
+from db_service.config import TestConfig
 from db_service.db_initialize import DBInitializer
-from db_service.models import DBCbsdState, Base, DBActiveModeConfig, DBRequestState, DBRequestType, DBCbsd
+from db_service.models import Base, DBCbsd
 from db_service.session_manager import SessionManager
-from db_service.tests.db_testcase_default import DBTestCaseDefault
+from db_service.tests.db_testcase import DBTestCase
 from mappings.types import CbsdStates, Switch
 from radio_controller.services.active_mode_controller.service import ActiveModeControllerService, cbsd_state_mapping
 from radio_controller.services.radio_controller.service import RadioControllerService
 from requests_pb2 import RequestPayload
 
 
-class ActiveModeControllerTestCase(DBTestCaseDefault):
+class ActiveModeControllerTestCase(DBTestCase):
+
     def setUp(self):
         super().setUp()
-        self.amc_service = ActiveModeControllerService(SessionManager(self.engine))
-        self.rc_service = RadioControllerService(SessionManager(self.engine))
-        Base.metadata.drop_all()  # Cleaning up after previous tests
+        Base.metadata.drop_all()
         Base.metadata.create_all()
         DBInitializer(SessionManager(self.engine)).initialize()
+        self.amc_service = ActiveModeControllerService(SessionManager(self.engine))
+        self.rc_service = RadioControllerService(SessionManager(self.engine))
 
-    def tearDown(self):
-        self.session.rollback()
-        self.session.close()
-        # Base.metadata.drop_all()
+    def get_config(self):
+        return TestConfig()
 
     def test_cbsd_auto_registered(self):
-        unregistered_state = self.session.query(DBCbsdState).filter(
-            DBCbsdState.name == CbsdStates.UNREGISTERED.value).scalar()
-        registered_state = self.session.query(DBCbsdState).filter(
-            DBCbsdState.name == CbsdStates.REGISTERED.value).scalar()
-
-        request_pending_state = self.session.query(DBRequestState).filter(DBRequestState.name == "pending").scalar()
-        registration_type = self.session.query(DBRequestType).filter(
-            DBRequestType.name == "registrationRequest").scalar()
-
+        # Given
         registration_request = {
             "registrationRequest": [
                 {
@@ -75,7 +66,9 @@ class ActiveModeControllerTestCase(DBTestCaseDefault):
         self.rc_service.UploadRequests(RequestPayload(payload=json.dumps(registration_request)), None)
 
         cbsd = self.session.query(DBCbsd).first()
+        self.session.commit()
 
+        # When
         self.amc_service.ToggleActiveMode(ToggleActiveModeParams(
             cbsd_id=cbsd.id,
             switch=Switch.ON.value,
@@ -83,13 +76,13 @@ class ActiveModeControllerTestCase(DBTestCaseDefault):
             None
         )
 
-        sleep(70)
+        sleep(200)
 
         self.session.commit()
 
         cbsd = self.session.query(DBCbsd).first()
 
+        # Then
         self.assertEqual(CbsdStates.REGISTERED.value, cbsd.state.name)
         self.assertEqual(1, len(cbsd.channels))
         self.assertEqual(1, len(cbsd.grants))
-        self.assertEqual(registered_state.id, len(cbsd.active_mode_config.desired_state_id))

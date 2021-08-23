@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Float
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Float, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.functions import now
@@ -156,8 +156,8 @@ class DBChannel(Base):
     __tablename__ = "channel"
     id = Column(Integer, primary_key=True, autoincrement=True)
     cbsd_id = Column(Integer, ForeignKey("cbsd.id"))
-    low_frequency = Column(Integer, nullable=False)
-    high_frequency = Column(Integer, nullable=False)
+    low_frequency = Column(BigInteger, nullable=False)
+    high_frequency = Column(BigInteger, nullable=False)
     channel_type = Column(String, nullable=False)
     rule_applied = Column(String, nullable=False)
     max_eirp = Column(Float)

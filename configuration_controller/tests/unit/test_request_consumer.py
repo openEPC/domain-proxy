@@ -3,12 +3,12 @@ from parameterized import parameterized
 from configuration_controller.request_consumer.request_db_consumer import RequestDBConsumer
 from db_service.models import DBRequest, DBRequestState, DBRequestType, DBCbsd, DBCbsdState
 from db_service.session_manager import Session
-from db_service.tests.db_testcase import DBTestCase
+from db_service.tests.local_db_test_case import LocalDBTestCase
 
 REQUEST_PROCESSING_LIMIT = 10
 
 
-class RegistrationDBConsumerTestCase(DBTestCase):
+class RegistrationDBConsumerTestCase(LocalDBTestCase):
 
     def test_get_pending_requests_retrieves_empty_list_of_requests_when_no_pending_requests_in_db(self):
         # Given

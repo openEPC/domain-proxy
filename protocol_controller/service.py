@@ -1,5 +1,4 @@
 import importlib
-from typing import Type
 
 from protocol_controller.config import Config
 from protocol_controller.plugin import ProtocolPlugin

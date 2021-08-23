@@ -48,8 +48,8 @@ def run():
 
 
 def get_config() -> Config:
-    app_config = os.environ.get('APP_CONFIG', 'radio_controller.config.ProductionConfig')
-    config_module = importlib.import_module('.'.join(app_config.split('.')[:-1]))
+    app_config = os.environ.get('APP_CONFIG', 'ProductionConfig')
+    config_module = importlib.import_module('.'.join(f"radio_controller.config.{app_config}".split('.')[:-1]))
     config_class = getattr(config_module, app_config.split('.')[-1])
     logger.info(str(config_class))
 

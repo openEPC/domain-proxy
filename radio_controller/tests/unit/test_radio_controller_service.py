@@ -6,13 +6,13 @@ from parameterized import parameterized
 from db_service.db_initialize import DBInitializer
 from db_service.models import DBRequest, DBResponse, DBCbsd, DBChannel
 from db_service.session_manager import SessionManager
-from db_service.tests.db_testcase import DBTestCase
+from db_service.tests.local_db_test_case import LocalDBTestCase
 from radio_controller.services.radio_controller.service import RadioControllerService
 
 Postgresql = testing.postgresql.PostgresqlFactory(cache_initialized_db=True)
 
 
-class RadioControllerTestCase(DBTestCase):
+class RadioControllerTestCase(LocalDBTestCase):
 
     def setUp(self):
         super().setUp()

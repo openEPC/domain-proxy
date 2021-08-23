@@ -49,6 +49,7 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
             )
         )
         configs = [self._build_config(session, x) for x in db_configs]
+        session.commit()
         return State(active_mode_configs=configs)
 
     def _build_config(self, session: Session, config: DBActiveModeConfig) -> ActiveModeConfig:
@@ -77,11 +78,17 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
 
     @staticmethod
     def _build_grant(grant: DBGrant) -> Grant:
+        last_heartbeat = grant.last_heartbeat_request_time
+        if last_heartbeat:
+            last_heartbeat_timestamp = last_heartbeat.timestamp()
+        else:
+            last_heartbeat_timestamp = 0
+
         return Grant(
             id=grant.grant_id,
             state=grant_state_mapping[grant.state.name],
             heartbeat_interval_sec=grant.heartbeat_interval,
-            last_heartbeat_timestamp=int(grant.last_heartbeat_request_time.timestamp()),
+            last_heartbeat_timestamp=int(last_heartbeat_timestamp),
         )
 
     @staticmethod
@@ -97,7 +104,7 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
 
     def _toggle_active_mode(self, session: Session, params: ToggleActiveModeParams):
         cbsd_id = params.cbsd_id
-        cbsd = session.query(DBCbsd).filter(DBCbsd.id == cbsd_id).scalar()
+        cbsd = session.query(DBCbsd).filter(DBCbsd.id == cbsd_id).first()
         if params.switch == switch_mapping[Switch.OFF.value]:
             logger.info(f"Switching active mode off for {cbsd}")
             return self._switch_active_mode_off(session, cbsd_id)
@@ -120,7 +127,7 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
     def _create_or_update_active_mode_config(
             session: Session, cbsd_id: int, new_state_name: str) -> ToggleActiveModeResponse:
 
-        cbsd_state = session.query(DBCbsdState).filter(DBCbsdState.name == new_state_name).scalar()
+        cbsd_state = session.query(DBCbsdState).filter(DBCbsdState.name == new_state_name).first()
 
         active_mode_config = session.query(DBActiveModeConfig).options(
             joinedload(DBActiveModeConfig.cbsd).options(
@@ -134,9 +141,7 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
         else:
             active_mode_config = DBActiveModeConfig(cbsd_id=cbsd_id, desired_state=cbsd_state)
             session.add(active_mode_config)
-
         session.commit()
-
         return ToggleActiveModeResponse(
             cbsd_db_id=cbsd_id,
             active_mode_enabled=True,

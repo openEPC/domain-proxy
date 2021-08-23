@@ -3,10 +3,10 @@ from parameterized import parameterized
 from db_service.db_initialize import DBInitializer
 from db_service.models import DBRequestState, DBRequestType, DBCbsdState, DBGrantState
 from db_service.session_manager import SessionManager
-from db_service.tests.db_testcase import DBTestCase
+from db_service.tests.local_db_test_case import LocalDBTestCase
 
 
-class DBInitializationTestCase(DBTestCase):
+class DBInitializationTestCase(LocalDBTestCase):
 
     def setUp(self):
         super().setUp()

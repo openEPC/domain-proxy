@@ -6,12 +6,12 @@ import active_mode_pb2 as active_mode
 from db_service.db_initialize import DBInitializer
 from db_service.models import DBCbsd, DBCbsdState, DBGrant, DBGrantState, DBActiveModeConfig, DBChannel
 from db_service.session_manager import SessionManager
-from db_service.tests.db_testcase import DBTestCase
+from db_service.tests.local_db_test_case import LocalDBTestCase
 from mappings.types import CbsdStates, GrantStates
 from radio_controller.services.active_mode_controller.service import ActiveModeControllerService
 
 
-class ActiveModeControllerTestCase(DBTestCase):
+class ActiveModeControllerTestCase(LocalDBTestCase):
     def setUp(self):
         super().setUp()
         self.amc_service = ActiveModeControllerService(SessionManager(self.engine))
