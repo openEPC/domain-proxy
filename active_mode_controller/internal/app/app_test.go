@@ -191,11 +191,7 @@ func (s *AppTestSuite) thenNoOtherRequestWasReceived() {
 func withPendingRequests(state *active_mode.State, name string) *active_mode.State {
 	for _, config := range state.ActiveModeConfigs {
 		if config.Cbsd.UserId == name {
-			requests := getExpectedRequests(name)
-			config.Cbsd.PendingRequests = make([]string, len(requests))
-			for i, r := range requests {
-				config.Cbsd.PendingRequests[i] = r.Payload
-			}
+			config.Cbsd.PendingRequests = []string{getExpectedSingleRequest(name)}
 			break
 		}
 	}
@@ -221,9 +217,14 @@ func buildSomeState(names ...string) *active_mode.State {
 }
 
 func getExpectedRequests(name string) []*requests.RequestPayload {
-	const template = `{"registrationRequest":[{"userId":"%[1]s","fccId":"%[1]s","cbsdSerialNumber":"%[1]s"}]}`
-	request := fmt.Sprintf(template, name)
+	const template = `{"registrationRequest":[%s]}`
+	request := fmt.Sprintf(template, getExpectedSingleRequest(name))
 	return []*requests.RequestPayload{{Payload: request}}
+}
+
+func getExpectedSingleRequest(name string) string {
+	const template = `{"userId":"%[1]s","fccId":"%[1]s","cbsdSerialNumber":"%[1]s"}`
+	return fmt.Sprintf(template, name)
 }
 
 type stubClock struct {

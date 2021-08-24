@@ -12,7 +12,9 @@ func GenerateMessages(now clock, state *active_mode.State) []*requests.RequestPa
 	var messages []message
 	for _, config := range state.ActiveModeConfigs {
 		generator := getPerCbsdMessageGenerator(now, config)
-		messages = append(messages, generator.generateMessages(config)...)
+		perCbsd := generator.generateMessages(config)
+		perCbsd = filterMessages(config.GetCbsd().GetPendingRequests(), perCbsd)
+		messages = append(messages, perCbsd...)
 	}
 	payloads := make([]*requests.RequestPayload, len(messages))
 	for i, m := range messages {

@@ -7,8 +7,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/domain-proxy/active_move_controller/internal/message_filter"
-
 	"github.com/domain-proxy/active_move_controller/api/active_mode"
 	"github.com/domain-proxy/active_move_controller/api/requests"
 	"github.com/domain-proxy/active_move_controller/config"
@@ -78,7 +76,6 @@ func (a *App) Run(ctx context.Context) error {
 				continue
 			}
 			messages := message_generator.GenerateMessages(a.clock.Now, state)
-			messages = message_filter.FilterMessages(state, messages)
 			for _, request := range messages {
 				if _, err := a.uploadRequests(ctx, requestSender, request); err != nil {
 					log.Printf("failed to send request '%s': %s", request.Payload, err)
