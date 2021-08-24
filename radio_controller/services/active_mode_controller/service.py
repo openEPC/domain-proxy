@@ -72,7 +72,7 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
             .filter(DBRequestState.name == RequestStates.PENDING.value, DBRequest.cbsd_id == cbsd.id)
         grants = [self._build_grant(x) for x in db_grants]
         channels = [self._build_channel(x) for x in cbsd.channels]
-        pending_requests = [json.dumps(payload) for (payload,) in pending_requests_payloads]
+        pending_requests = [json.dumps(payload, separators=(',', ':')) for (payload,) in pending_requests_payloads]
         return Cbsd(
             id=cbsd.cbsd_id,
             user_id=cbsd.user_id,
