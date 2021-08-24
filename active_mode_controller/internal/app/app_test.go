@@ -67,6 +67,12 @@ func (s *AppTestSuite) TestGetStateAndSendRequests() {
 	s.thenRequestsWereEventuallyReceived(getExpectedRequests("some"))
 }
 
+func (s *AppTestSuite) TestFilterPendingRequests() {
+	s.givenState(withPendingRequests(buildSomeState("some", "other"), "some"))
+	s.whenTickerFired()
+	s.thenRequestsWereEventuallyReceived(getExpectedRequests("other"))
+}
+
 func (s *AppTestSuite) TestAppWorkInALoop() {
 	s.givenState(buildSomeState("some"))
 	s.whenTickerFired()
@@ -182,9 +188,24 @@ func (s *AppTestSuite) thenNoOtherRequestWasReceived() {
 	}
 }
 
-func buildSomeState(name string) *active_mode.State {
-	return &active_mode.State{
-		ActiveModeConfigs: []*active_mode.ActiveModeConfig{{
+func withPendingRequests(state *active_mode.State, name string) *active_mode.State {
+	for _, config := range state.ActiveModeConfigs {
+		if config.Cbsd.UserId == name {
+			requests := getExpectedRequests(name)
+			config.Cbsd.PendingRequests = make([]string, len(requests))
+			for i, r := range requests {
+				config.Cbsd.PendingRequests[i] = r.Payload
+			}
+			break
+		}
+	}
+	return state
+}
+
+func buildSomeState(names ...string) *active_mode.State {
+	configs := make([]*active_mode.ActiveModeConfig, len(names))
+	for i, name := range names {
+		configs[i] = &active_mode.ActiveModeConfig{
 			DesiredState: active_mode.CbsdState_Registered,
 			Cbsd: &active_mode.Cbsd{
 				UserId:       name,
@@ -192,7 +213,10 @@ func buildSomeState(name string) *active_mode.State {
 				SerialNumber: name,
 				State:        active_mode.CbsdState_Unregistered,
 			},
-		}},
+		}
+	}
+	return &active_mode.State{
+		ActiveModeConfigs: configs,
 	}
 }
 

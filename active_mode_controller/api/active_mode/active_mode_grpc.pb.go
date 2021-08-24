@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ActiveModeControllerClient interface {
 	GetState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*State, error)
+	ToggleActiveMode(ctx context.Context, in *ToggleActiveModeParams, opts ...grpc.CallOption) (*ToggleActiveModeResponse, error)
 }
 
 type activeModeControllerClient struct {
@@ -38,11 +39,21 @@ func (c *activeModeControllerClient) GetState(ctx context.Context, in *GetStateR
 	return out, nil
 }
 
+func (c *activeModeControllerClient) ToggleActiveMode(ctx context.Context, in *ToggleActiveModeParams, opts ...grpc.CallOption) (*ToggleActiveModeResponse, error) {
+	out := new(ToggleActiveModeResponse)
+	err := c.cc.Invoke(ctx, "/ActiveModeController/ToggleActiveMode", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActiveModeControllerServer is the server API for ActiveModeController service.
 // All implementations must embed UnimplementedActiveModeControllerServer
 // for forward compatibility
 type ActiveModeControllerServer interface {
 	GetState(context.Context, *GetStateRequest) (*State, error)
+	ToggleActiveMode(context.Context, *ToggleActiveModeParams) (*ToggleActiveModeResponse, error)
 	mustEmbedUnimplementedActiveModeControllerServer()
 }
 
@@ -52,6 +63,9 @@ type UnimplementedActiveModeControllerServer struct {
 
 func (UnimplementedActiveModeControllerServer) GetState(context.Context, *GetStateRequest) (*State, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetState not implemented")
+}
+func (UnimplementedActiveModeControllerServer) ToggleActiveMode(context.Context, *ToggleActiveModeParams) (*ToggleActiveModeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ToggleActiveMode not implemented")
 }
 func (UnimplementedActiveModeControllerServer) mustEmbedUnimplementedActiveModeControllerServer() {}
 
@@ -84,6 +98,24 @@ func _ActiveModeController_GetState_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActiveModeController_ToggleActiveMode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleActiveModeParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActiveModeControllerServer).ToggleActiveMode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ActiveModeController/ToggleActiveMode",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActiveModeControllerServer).ToggleActiveMode(ctx, req.(*ToggleActiveModeParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActiveModeController_ServiceDesc is the grpc.ServiceDesc for ActiveModeController service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -94,6 +126,10 @@ var ActiveModeController_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetState",
 			Handler:    _ActiveModeController_GetState_Handler,
+		},
+		{
+			MethodName: "ToggleActiveMode",
+			Handler:    _ActiveModeController_ToggleActiveMode_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
