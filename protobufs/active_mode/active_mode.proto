@@ -32,6 +32,7 @@ message Cbsd {
   repeated Grant grants = 6;
   repeated Channel channels = 7;
   optional float eirp_capability = 8;
+  repeated string pending_requests = 9;
 }
 
 message Grant {
