@@ -1,13 +1,15 @@
+import json
 from datetime import datetime
 
 from google.protobuf.json_format import MessageToDict
 
 import active_mode_pb2 as active_mode
 from db_service.db_initialize import DBInitializer
-from db_service.models import DBCbsd, DBCbsdState, DBGrant, DBGrantState, DBActiveModeConfig, DBChannel
+from db_service.models import DBCbsd, DBCbsdState, DBGrant, DBGrantState, DBActiveModeConfig, DBChannel, DBRequest, \
+    DBRequestType, DBRequestState
 from db_service.session_manager import SessionManager
 from db_service.tests.local_db_test_case import LocalDBTestCase
-from mappings.types import CbsdStates, GrantStates
+from mappings.types import CbsdStates, GrantStates, RequestTypes, RequestStates
 from radio_controller.services.active_mode_controller.service import ActiveModeControllerService
 
 
@@ -98,7 +100,24 @@ class ActiveModeControllerTestCase(LocalDBTestCase):
                 rule_applied="some rule",
             )
         ]
-        self.session.add_all(cbsds + active_mode_configs + grants + channels)
+
+        grant_req = self.session.query(DBRequestType) \
+            .filter(DBRequestType.name == RequestTypes.GRANT.value).one()
+        spectrum_req = self.session.query(DBRequestType) \
+            .filter(DBRequestType.name == RequestTypes.SPECTRUM_INQUIRY.value).one()
+        pending_status = self.session.query(DBRequestState) \
+            .filter(DBRequestState.name == RequestStates.PENDING.value).one()
+        processed_status = self.session.query(DBRequestState) \
+            .filter(DBRequestState.name == RequestStates.PROCESSED.value).one()
+
+        payload1 = {"some": "payload1"}
+        payload2 = {"some": "payload2"}
+
+        requests = [
+            DBRequest(cbsd=cbsds[0], type=grant_req, state=pending_status, payload=payload1),
+            DBRequest(cbsd=cbsds[0], type=spectrum_req, state=processed_status, payload=payload2),
+        ]
+        self.session.add_all(cbsds + active_mode_configs + grants + channels + requests)
         self.session.commit()
 
         # When
@@ -144,6 +163,9 @@ class ActiveModeControllerTestCase(LocalDBTestCase):
                                     high=80,
                                 ),
                             ),
+                        ],
+                        pending_requests=[
+                            json.dumps(payload1),
                         ],
                         eirp_capability=26.5,
                     ),

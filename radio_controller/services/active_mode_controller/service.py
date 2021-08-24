@@ -1,3 +1,4 @@
+import json
 import logging
 
 from sqlalchemy.orm import joinedload
@@ -5,9 +6,10 @@ from sqlalchemy.orm import joinedload
 from active_mode_pb2 import GetStateRequest, State, ToggleActiveModeParams, ToggleActiveModeResponse, Unregistered, \
     Registered, Granted, Authorized, ActiveModeConfig, Cbsd, Grant, Channel, FrequencyRange, On, Off, _CBSDSTATE
 from active_mode_pb2_grpc import ActiveModeControllerServicer
-from db_service.models import DBActiveModeConfig, DBCbsd, DBGrant, DBGrantState, DBChannel, DBCbsdState
+from db_service.models import DBActiveModeConfig, DBCbsd, DBGrant, DBGrantState, DBChannel, DBCbsdState, DBRequest, \
+    DBRequestState
 from db_service.session_manager import SessionManager, Session
-from mappings.types import CbsdStates, GrantStates, Switch
+from mappings.types import CbsdStates, GrantStates, Switch, RequestStates
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +61,18 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
         )
 
     def _build_cbsd(self, session: Session, cbsd: DBCbsd) -> Cbsd:
-        db_grants = session.query(DBGrant).join(DBGrantState).filter(
-            DBGrant.cbsd_id == cbsd.id,
-            DBGrantState.name != GrantStates.IDLE.value,
-        )
+        db_grants = session.query(DBGrant) \
+            .join(DBGrantState) \
+            .filter(
+                DBGrant.cbsd_id == cbsd.id,
+                DBGrantState.name != GrantStates.IDLE.value,
+            )
+        pending_requests_payloads = session.query(DBRequest.payload) \
+            .join(DBRequestState) \
+            .filter(DBRequestState.name == RequestStates.PENDING.value, DBRequest.cbsd_id == cbsd.id)
         grants = [self._build_grant(x) for x in db_grants]
         channels = [self._build_channel(x) for x in cbsd.channels]
+        pending_requests = [json.dumps(payload) for (payload,) in pending_requests_payloads]
         return Cbsd(
             id=cbsd.cbsd_id,
             user_id=cbsd.user_id,
@@ -74,6 +82,7 @@ class ActiveModeControllerService(ActiveModeControllerServicer):
             eirp_capability=cbsd.eirp_capability,
             grants=grants,
             channels=channels,
+            pending_requests=pending_requests
         )
 
     @staticmethod
