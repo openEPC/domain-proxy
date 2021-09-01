@@ -80,7 +80,7 @@ def run():
 
 
 def get_config() -> Config:
-    app_config = os.environ.get('APP_CONFIG', 'ProductionConfig')
+    app_config = os.environ.get('APP_CONFIG', 'TestConfig')
     config_module = importlib.import_module('.'.join(f"configuration_controller.config.{app_config}".split('.')[:-1]))
     config_class = getattr(config_module, app_config.split('.')[-1])
     return config_class()
