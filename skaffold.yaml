@@ -61,32 +61,10 @@ profiles:
       - op: add
         path: /build/artifacts/-
         value:
-          image: radio-controller-tests
+          image: test_runner_image
           context: .
           docker:
-            dockerfile: radio_controller/Dockerfile
-            buildArgs:
-              ENV: 'tests'
-      - op: add
-        path: /build/artifacts/-
-        value:
-          image: protocol-controller-tests
-          context: .
-          docker:
-            dockerfile: protocol_controller/Dockerfile
-            buildArgs:
-              ENV: 'tests'
-      - op: add
-        path: /deploy/helm/releases/0/setValues
-        value:
-          protocol_controller:
-            enabled: false
-          radio_controller:
-            extraEnv:
-              SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:password@db:5433/dp_test"
-          configuration_controller:
-            extraEnv:
-              SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:password@db:5433/dp_test"
+            dockerfile: test_runner/Dockerfile
       - op: add
         path: /deploy/kubectl
         value:
@@ -94,7 +72,7 @@ profiles:
             apply:
               - "--force=true"
           manifests:
-           - "./tools/deployment/tests/protocol_controller_*.yml"
+           - "./tools/deployment/tests/test_runner_*.yml"
     activation:
       - env: CI=true
 

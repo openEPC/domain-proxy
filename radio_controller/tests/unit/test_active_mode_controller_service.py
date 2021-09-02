@@ -165,7 +165,7 @@ class ActiveModeControllerTestCase(LocalDBTestCase):
                             ),
                         ],
                         pending_requests=[
-                            json.dumps(payload1),
+                            json.dumps(payload1, separators=(',', ':')),
                         ],
                         eirp_capability=26.5,
                     ),

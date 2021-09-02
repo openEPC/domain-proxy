@@ -18,7 +18,7 @@ spec:
       - name: fake-sas
         #image: domainproxyfw1/harness:0.0.1
         imagePullPolicy: IfNotPresent
-        image: faketyfake/sas:latest
+        image: faketyfake/sas:latest  # TODO
         volumeMounts:
         - name: certificates
           mountPath: /opt/server/certs

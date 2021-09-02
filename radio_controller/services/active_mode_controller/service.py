@@ -3,30 +3,16 @@ import logging
 
 from sqlalchemy.orm import joinedload
 
-from active_mode_pb2 import GetStateRequest, State, ToggleActiveModeParams, ToggleActiveModeResponse, Unregistered, \
-    Registered, Granted, Authorized, ActiveModeConfig, Cbsd, Grant, Channel, FrequencyRange, On, Off, _CBSDSTATE
+from active_mode_pb2 import GetStateRequest, State, ToggleActiveModeParams, ToggleActiveModeResponse, \
+    ActiveModeConfig, Cbsd, Grant, Channel, FrequencyRange, _CBSDSTATE
 from active_mode_pb2_grpc import ActiveModeControllerServicer
 from db_service.models import DBActiveModeConfig, DBCbsd, DBGrant, DBGrantState, DBChannel, DBCbsdState, DBRequest, \
     DBRequestState
 from db_service.session_manager import SessionManager, Session
-from mappings.types import CbsdStates, GrantStates, Switch, RequestStates
+from mappings.cbsd_states import cbsd_state_mapping, grant_state_mapping, switch_mapping
+from mappings.types import GrantStates, Switch, RequestStates
 
 logger = logging.getLogger(__name__)
-
-cbsd_state_mapping = {
-    CbsdStates.UNREGISTERED.value: Unregistered,
-    CbsdStates.REGISTERED.value: Registered,
-}
-
-grant_state_mapping = {
-    GrantStates.GRANTED.value: Granted,
-    GrantStates.AUTHORIZED.value: Authorized,
-}
-
-switch_mapping = {
-    Switch.ON.value: On,
-    Switch.OFF.value: Off,
-}
 
 
 class ActiveModeControllerService(ActiveModeControllerServicer):

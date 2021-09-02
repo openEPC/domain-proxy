@@ -3,16 +3,12 @@ from unittest import TestCase
 from marshmallow.exceptions import MarshmallowError
 from parameterized import parameterized
 
-from protocol_controller.plugins.cbsd_sas.tests.fixtures.fake_requests.deregistration_requests import \
-    deregistration_requests
-from protocol_controller.plugins.cbsd_sas.tests.fixtures.fake_requests.grant_requests import grant_requests
-from protocol_controller.plugins.cbsd_sas.tests.fixtures.fake_requests.heartbeat_requests import heartbeat_requests
-from protocol_controller.plugins.cbsd_sas.tests.fixtures.fake_requests.registration_requests import \
-    registration_requests
-from protocol_controller.plugins.cbsd_sas.tests.fixtures.fake_requests.relinquishment_requests import \
-    relinquishment_requests
-from protocol_controller.plugins.cbsd_sas.tests.fixtures.fake_requests.spectrum_inquiry_requests import \
-    spectrum_inquiry_requests
+from fixtures.fake_requests.deregistration_requests import deregistration_requests
+from fixtures.fake_requests.grant_requests import grant_requests
+from fixtures.fake_requests.heartbeat_requests import heartbeat_requests
+from fixtures.fake_requests.registration_requests import registration_requests
+from fixtures.fake_requests.relinquishment_requests import relinquishment_requests
+from fixtures.fake_requests.spectrum_inquiry_requests import spectrum_inquiry_requests
 from protocol_controller.plugins.cbsd_sas.validators.deregistration_request import DeregistrationRequestSchema
 from protocol_controller.plugins.cbsd_sas.validators.grant_request import GrantRequestSchema
 from protocol_controller.plugins.cbsd_sas.validators.heartbeat_request import HeartbeatRequestSchema

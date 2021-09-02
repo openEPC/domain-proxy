@@ -4,7 +4,6 @@ FROM python:3.9.2-slim-buster as standard-version
 COPY db_service/config.py db_service/models.py db_service/session_manager.py db_service/db_initialize.py /db_service/
 COPY db_service/tests /db_service/tests
 COPY mappings /mappings
-COPY radio_controller /radio_controller
 COPY protobufs /protobufs
 COPY test_runner /test_runner
 COPY fixtures /fixtures
@@ -18,4 +17,3 @@ FROM ${ENV}-version as final
 ENV PYTHONPATH=$PYTHONPATH:/
 
 ENTRYPOINT ["python"]
-CMD ["-m", "pytest", "-vvv", "-s", "-o", "log_cli=true", "-o", "log_cli_level=DEBUG", "tests", "--junitxml=test-results/test_report.xml"]

@@ -11,7 +11,7 @@ from db_service.session_manager import SessionManager
 from db_service.tests.db_testcase import DBTestCase
 from fixtures.fake_requests.registration_requests import registration_requests
 from mappings.types import CbsdStates, Switch
-from radio_controller.services.active_mode_controller.service import cbsd_state_mapping
+from mappings.cbsd_states import cbsd_state_mapping
 from requests_pb2 import RequestPayload
 from requests_pb2_grpc import RadioControllerStub
 from test_runner.config import TestConfig
