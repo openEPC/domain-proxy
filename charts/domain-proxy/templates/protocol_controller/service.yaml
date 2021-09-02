@@ -6,7 +6,6 @@ metadata:
   labels:
     {{- include "domain-proxy.protocol_controller.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.protocol_controller.service.type }}
   ports:
     - port: {{ .Values.protocol_controller.service.port }}
       targetPort: 8080

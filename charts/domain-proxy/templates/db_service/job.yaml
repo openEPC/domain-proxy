@@ -2,7 +2,7 @@
 apiVersion: {{ template "domain-proxy.job.apiVersion" . }}
 kind: Job
 metadata:
-  name: {{ include "domain-proxy.db_service.fullname" . }}
+  name: {{ include "domain-proxy.db_service.fullname" . }}-{{ .Release.Revision }}
 spec:
   ttlSecondsAfterFinished: 100
   template:

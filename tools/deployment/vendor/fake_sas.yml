@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: fake-sas
-        #image: domainproxyfw1/harness:0.0.1
+#        image: domainproxyfw1/harness:0.0.1
         imagePullPolicy: IfNotPresent
         image: faketyfake/sas:latest  # TODO
         volumeMounts:

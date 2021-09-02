@@ -2,6 +2,7 @@ SHELL := /bin/bash
 export MINIKUBE_HOME ?= $(shell echo ~/.minikube)
 export KUBECONFIG ?= $(shell echo ~/.kube/config)
 export CERTS := $(shell mktemp -d /tmp/certs.XXXXXXXXXX)
+dev: export DATE := $(shell date +%F-%T)
 
 
 .PHONY: run
@@ -21,9 +22,10 @@ clean:
 .PHONY: dev
 dev:
 ifdef CI
-	skaffold dev --force=true
+	MYVAR=$(DATE) skaffold dev --force=true
+	#skaffold dev --force=true
 else
-	skaffold dev
+	skaffold dev --force=true
 endif
 
 .PHONY: _build_ci

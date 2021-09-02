@@ -43,7 +43,6 @@ configuration_controller:
 
   service:
     enable: true  # Whether to enable kubernetes service for dp component.
-    type: ClusterIP  # Type of enabled kubernetes service.
     port: 8080  # Default port of enabled kubernetes service.
 
   # If paths are set chart will generate kubernetes Secret resources for ingress. Mutually exclusive with ingress.tls.
@@ -152,7 +151,6 @@ protocol_controller:
 
   service:
     enable: true  # Whether to enable kubernetes service for dp component.
-    type: ClusterIP  # Type of enabled kubernetes service.
     port: 8080  # Default port of enabled kubernetes service.
 
 
@@ -277,7 +275,6 @@ radio_controller:
 
   service:
     enable: true  # Whether to enable kubernetes service for dp component.
-    type: ClusterIP  # Type of enabled kubernetes service.
     port: 50053  # Default port of enabled kubernetes service.
 
   resources: {}  # Resource requests and limits of Pod.

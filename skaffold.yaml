@@ -6,7 +6,8 @@ build:
   tagPolicy:
     sha256: {}
   local:
-    push: false
+    push: true
+    useDockerCLI: true
     concurrency: 0
   artifacts:
     - image: active-mode-controller
@@ -31,9 +32,6 @@ build:
         dockerfile: db_service/Dockerfile
 deploy:
   helm:
-    flags:
-      install:
-        - "--debug"
     releases:
       - name: domain-proxy
         chartPath: ./charts/domain-proxy
@@ -65,6 +63,25 @@ profiles:
           context: .
           docker:
             dockerfile: test_runner/Dockerfile
+      #- op: add
+      #  path: /deploy/helm/releases/0/setValues
+      #  value:
+      #    protocol_controller:
+      #      enabled: false
+      #    radio_controller:
+      #      extraEnv:
+      #        SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:password@db:5433/dp_test"
+      #    configuration_controller:
+      #      extraEnv:
+      #        SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://postgres:password@db:5433/dp_test"
+      - op: add
+        path: /deploy/helm/releases/0/setValueTemplates
+        value:
+          protocol_controller:
+            enabled: false
+          radio_controller:
+            extraEnv:
+              SQLALCHEMY_DATABASE_URI: "{{ .MYVAR }}"
       - op: add
         path: /deploy/kubectl
         value:

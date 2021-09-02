@@ -32,7 +32,6 @@ configuration_controller:
 
   service:
     enable: true
-    type: ClusterIP
     port: 8080
 
   tlsConfig:
@@ -107,7 +106,6 @@ protocol_controller:
 
   service:
     enable: true
-    type: ClusterIP
     port: 8080
 
   tlsConfig:
@@ -201,7 +199,6 @@ radio_controller:
 
   service:
     enable: true
-    type: ClusterIP
     port: 50053
 
   resources:
